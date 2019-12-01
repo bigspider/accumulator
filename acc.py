@@ -51,12 +51,32 @@ def prove(xs, hashes, i, k):
         else:
             result += prove(xs, hashes, i - 1, k)
 
-
     return result
 
-# returns True if `proof` is valid for the statment that the element at position k is x, starting from element i
-def verify(i, k, proof, x):
-    pass
+# returns True if `proof` is valid for the statment that the element at position k is x, starting from element i that has S(i) = h
+def verify(h, i, k, proof, x):
+    assert k <= i
+    print('{0:07b}'.format(i))
+
+    if len(proof) < 3:
+        return False
+
+    x_i, s_prev, s_pred = proof[0:3]
+
+    # verify that H(x_i|s_prev|s_pred) == h
+    if hashlib.sha256(x_i + s_prev + s_pred).digest() != x:
+        return False
+
+    if i == k:
+        return x_i == x
+    else:  # i > k
+        if i - d(i) >= k:
+            return verify(s_pred, i - d(i), k, proof[3:], x)
+        else:
+            return verify(s_prev, i - 1, k, proof[3:], x)
+
+
+
 
 def main():
     N = 100
@@ -64,14 +84,13 @@ def main():
     hashes = [NULL_HASH]
     xs = [NULL_HASH]
     for i in range(1, N + 1):
-        x = str(i).encode('utf8')
+        x = hashlib.sha256(str(i).encode('utf8')).digest()
         xs.append(x)
         r = acc.add(x)
         hashes.append(r)
-    print(hashes)
-
 
     proof = prove(xs, hashes, 84, 10)
+    print(proof)
 
 if __name__ == "__main__":
     main()
