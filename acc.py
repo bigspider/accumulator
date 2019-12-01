@@ -23,7 +23,7 @@ class Accumulator:
         self.D = [NULL_HASH] * (logsize + 1)  # check if + 1 is needed
 
     def get_state(self, i):
-        return NULL_HASH if i == 1 else self.D[log_d(i - 1)]
+        return NULL_HASH if i == 0 else self.D[log_d(i)]
 
     def add(self, x):
         self.i += 1
@@ -37,11 +37,41 @@ class Accumulator:
         result = hashlib.sha256(data).digest()
 
         self.D[log_d(i)] = result
-        return i, result
+        return result
 
+# Starting from index i, build a proof for state k
+def prove(xs, hashes, i, k):
+    print('{0:07b}'.format(i))
+    assert k <= i
+
+    result = [xs[i], hashes[i - 1], hashes[i - d(i)]]
+    if i > k:
+        if i - d(i) >= k:
+            result += prove(xs, hashes, i - d(i), k)
+        else:
+            result += prove(xs, hashes, i - 1, k)
+
+
+    return result
+
+# returns True if `proof` is valid for the statment that the element at position k is x, starting from element i
+def verify(i, k, proof, x):
+    pass
+
+def main():
+    N = 100
+    acc = Accumulator(N)
+    hashes = [NULL_HASH]
+    xs = [NULL_HASH]
+    for i in range(1, N + 1):
+        x = str(i).encode('utf8')
+        xs.append(x)
+        r = acc.add(x)
+        hashes.append(r)
+    print(hashes)
+
+
+    proof = prove(xs, hashes, 84, 10)
 
 if __name__ == "__main__":
-    acc = Accumulator(20)
-    for i in range(20):
-        r = acc.add(str(i).encode('utf8'))
-        print(r)
+    main()
