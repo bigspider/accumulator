@@ -20,7 +20,7 @@ class Accumulator:
     def __init__(self, logsize=20):
         self.i = 0
         self.N = 1 << logsize
-        self.D = [NULL_HASH] * (logsize + 1)  # check if + 1 is needed
+        self.D = [NULL_HASH] * (logsize + 1)  # TODO: check if + 1 is needed
 
     def get_state(self, i):
         return NULL_HASH if i == 0 else self.D[log_d(i)]
@@ -41,7 +41,6 @@ class Accumulator:
 
 # Starting from index i, build a proof for state k
 def prove(xs, hashes, i, k):
-    print('{0:07b}'.format(i))
     assert k <= i
 
     result = [xs[i], hashes[i - 1], hashes[i - d(i)]]
@@ -56,15 +55,15 @@ def prove(xs, hashes, i, k):
 # returns True if `proof` is valid for the statment that the element at position k is x, starting from element i that has S(i) = h
 def verify(h, i, k, proof, x):
     assert k <= i
-    print('{0:07b}'.format(i))
-
     if len(proof) < 3:
+        print("Proof too short")
         return False
 
     x_i, s_prev, s_pred = proof[0:3]
 
     # verify that H(x_i|s_prev|s_pred) == h
-    if hashlib.sha256(x_i + s_prev + s_pred).digest() != x:
+    if hashlib.sha256(x_i + s_prev + s_pred).digest() != h:
+        print("Hash did not match")
         return False
 
     if i == k:
@@ -74,7 +73,6 @@ def verify(h, i, k, proof, x):
             return verify(s_pred, i - d(i), k, proof[3:], x)
         else:
             return verify(s_prev, i - 1, k, proof[3:], x)
-
 
 
 
@@ -90,7 +88,12 @@ def main():
         hashes.append(r)
 
     proof = prove(xs, hashes, 84, 10)
-    print(proof)
+
+    verified = verify(hashes[84], 84, 10, proof, xs[10])
+    if verified:
+        print("Proof passed verification")
+    else:
+        print("Proof did not pass verification")
 
 if __name__ == "__main__":
     main()
