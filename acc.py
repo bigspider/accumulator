@@ -30,7 +30,6 @@ class Accumulator:
         i = self.i
 
         prev_state = self.get_state(i - 1)
-        j = i - d(i)
         other_state = self.get_state(i - d(i))
 
         data = x + prev_state + other_state
