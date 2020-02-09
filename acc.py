@@ -1,18 +1,20 @@
 import hashlib
 
-NULL_HASH = bytes([0]*32)
+NULL_HASH = bytes([0] * 32)
 
 # The maximum power of 2 that divides n
 def d(n):
-    return n & (~(n-1))
+    return n & (~(n - 1))
+
 
 # The number of trailing zeros in the binary representation of n
 def log_d(n):
     result = 0
-    while(n & 1 == 0):
+    while n & 1 == 0:
         n = n // 2
         result += 1
     return result
+
 
 class Accumulator:
     """An accumulator of size 2^logsize"""
@@ -38,6 +40,7 @@ class Accumulator:
         self.D[log_d(i)] = result
         return result
 
+
 # Starting from index i, build a proof for state k
 def prove(xs, hashes, i, k):
     assert k <= i
@@ -50,6 +53,7 @@ def prove(xs, hashes, i, k):
             result += prove(xs, hashes, i - 1, k)
 
     return result
+
 
 # returns True if `proof` is valid for the statment that the element at position k is x, starting from element i that has S(i) = h
 def verify(h, i, k, proof, x):
@@ -74,14 +78,13 @@ def verify(h, i, k, proof, x):
             return verify(s_prev, i - 1, k, proof[3:], x)
 
 
-
 def main():
     N = 100
     acc = Accumulator(N)
     hashes = [NULL_HASH]
     xs = [NULL_HASH]
     for i in range(1, N + 1):
-        x = hashlib.sha256(str(i).encode('utf8')).digest()
+        x = hashlib.sha256(str(i).encode("utf8")).digest()
         xs.append(x)
         r = acc.add(x)
         hashes.append(r)
@@ -93,6 +96,7 @@ def main():
         print("Proof passed verification")
     else:
         print("Proof did not pass verification")
+
 
 if __name__ == "__main__":
     main()
