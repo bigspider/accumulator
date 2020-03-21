@@ -81,10 +81,11 @@ def combine(a, b):
     return a + b # TODO: change with the concatenated (sorted) hash
 
 
-class MerkleTree:
-    """A compact growable Merkle tree"""
+class SegmentTree:
+    """An implicit growable segment-tree"""
 
-    def __init__(self, elements=None):
+    def __init__(self, combine, elements=None):
+        self.combine = combine
         if elements is None:
             elements = []
 
@@ -104,7 +105,7 @@ class MerkleTree:
             shift = 1
             while t % 2 == 1:
                 left_sibling_value = self.nodes[len(self.nodes) - 1 - shift]
-                parent_node = combine(left_sibling_value, self.nodes[-1])
+                parent_node = self.combine(left_sibling_value, self.nodes[-1])
                 self.nodes.append(parent_node)
                 t = t // 2
                 shift = 2*shift + 1
@@ -125,9 +126,9 @@ class MerkleTree:
         cur_temp_node = roots[0] + 1 # node next to the root of the rightmost subtree
         prev = self.nodes[roots[0]]
         for i in range(len(roots) - 1):
-            next = combine(self.nodes[roots[i+1]], prev)
-            self.nodes[cur_temp_node] = next
-            prev = next
+            nxt = self.combine(self.nodes[roots[i+1]], prev)
+            self.nodes[cur_temp_node] = nxt
+            prev = nxt
             cur_temp_node += 1
 
     def set_element(self, i, v):
@@ -160,7 +161,7 @@ class MerkleTree:
             parent = x + 1 if bit == 1 else x + step_size
 
             # update current node
-            self.nodes[parent] = combine(self.nodes[parent - step_size], self.nodes[parent - 1])
+            self.nodes[parent] = self.combine(self.nodes[parent - step_size], self.nodes[parent - 1])
 
             x = parent
 
@@ -177,13 +178,13 @@ class MerkleTree:
 
 
 def main():
-    X = MerkleTree(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
-    print(X.nodes)
-    print([el for el in X.elements()])
+    sum_tree = SegmentTree(lambda x, y: x + y, ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+    print(sum_tree.nodes)
+    print([el for el in sum_tree.elements()])
     for i in ["A", "B", "C", "D", "E", "F"]:
         print(f"Inserting {i}")
-        X.append_element(str(i))
-        print(X.nodes)
-        print([el for el in X.elements()])
+        sum_tree.append_element(str(i))
+        print(sum_tree.nodes)
+        print([el for el in sum_tree.elements()])
 if __name__ == "__main__":
     main()
