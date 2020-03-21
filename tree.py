@@ -7,19 +7,47 @@ def hamming_weight(n):
 
     return result
 
-def zero_ls1(n):
+def zero_lsb(n):
     """Returns the number obtained by zeroing the least significant 1 of n"""
     return n & (n - 1)
 
-def ls1(n):
+def lsb(n):
     """Returns the number obtained by zeroing every bit of n, except its least significant 1"""
     return n & -n
+
+def msb(n):
+    """
+    For n >= 1, returns the number obtained by zeroing every bit of n, except its most significant 1.
+    Equivalently, returns the highest power of two that is less than or equal to n
+    """
+    assert n >= 1
+    result = 1
+    while 2*result <= n:
+        result *= 2
+    return result
+
+def log2(n):
+    """Return floor(log2(n)) for n >= 1"""
+    result = 0
+    while n > 1:
+        n //= 2
+        result += 1
+    return result
+
+def bits(n, subtree_width):
+    """Returns the bits of n, starting from the least significant bit, using log_2(subtree_width) bits."""
+    assert 0 <= n < subtree_width
+    result = []
+    while subtree_width > 1:
+        result.append(n & 1)
+        subtree_width //= 2
+    return result
 
 def nth_leaf(n):
     """Returns the index of the n-th leaf"""
     return 2*n - hamming_weight(n)
 
-def subtree_widths(k):
+def subtree_widths_ascending(k):
     """Returns the number of leafs of each of the complete subtrees, starting from the smallest"""
     result = []
     b = 1
@@ -28,6 +56,26 @@ def subtree_widths(k):
             k -= b
             result.append(b)
         b *= 2
+    return result
+
+def subtree_roots_descending(k):
+    """Returns the indices of the root nodes of all the subtrees, from the largest (leftmost) to the smallest (rightmost)"""
+    result = []
+    tree_start = 0
+    for cur_tree_width in reversed(subtree_widths_ascending(k)):
+        cur_tree_size = 2 * cur_tree_width - 1 # number of nodes of current tree
+        result.append(tree_start + cur_tree_size - 1) # index of root
+        tree_start += cur_tree_size
+    return result
+
+
+def resize_list(array, new_size, filling=None):
+    """Resizes the array to a specified size, truncating or extending with the given filling as needed."""
+    size_difference = new_size - len(array)
+    if size_difference > 0:
+        array.extend([filling for x in range(size_difference)])
+    else:
+        del array[new_size:]
 
 def combine(a, b):
     return a + b # TODO: change with the concatenated (sorted) hash
@@ -36,73 +84,106 @@ def combine(a, b):
 class MerkleTree:
     """A compact growable Merkle tree"""
 
-    def __init__(self, elements=[]):
+    def __init__(self, elements=None):
+        if elements is None:
+            elements = []
+
         self.k = len(elements)
-        self.elements = elements
+        self.nodes = []
+
+        if self.k == 0:
+            return
 
         leaf_index = 0
-        nodes = []
-        subtree_roots = []
         while leaf_index < self.k:
-            nodes.append(elements[leaf_index])
+            self.nodes.append(elements[leaf_index])
 
             # for each trailing 1 in the binary rapresentation of leaf_index, we append an internal node (ancestor)
             # we keep track of the size of the subtree rooted at the current node
             t = leaf_index
             shift = 1
             while t % 2 == 1:
-                left_sibling = nodes[len(nodes) - 1 - shift]
-                parent_node = combine(left_sibling, nodes[-1])
-                nodes.append(parent_node)
+                left_sibling_value = self.nodes[len(self.nodes) - 1 - shift]
+                parent_node = combine(left_sibling_value, self.nodes[-1])
+                self.nodes.append(parent_node)
                 t = t // 2
                 shift = 2*shift + 1
 
             leaf_index += 1
 
-        # for each pair of roots of complete subtrees, add a node combining the two roots, starting from the rightmost trees
-        if self.k > 0:
-            right_child = nodes[-1]
-            t = self.k
-            p = len(nodes) - 1
-            while zero_ls1(t) > 0:
-                skip_size = ls1(t) * 2 - 1
-                p -= skip_size
-                left_child = nodes[p]
-                new_node = combine(left_child, right_child)
-                nodes.append(new_node)
-                right_child = new_node
-                t = zero_ls1(t)
+        resize_list(self.nodes, 2*self.k - 1)
+        self.update_temporary_nodes()
 
-        self.nodes = nodes
+    def elements(self):
+        """Iterates over all the elements (leafs)."""
+        # TODO: this is O(n log n), can do O(n)
+        for i in range(self.k):
+            yield self.nodes[nth_leaf(i)]
 
-    def subtree_roots(self):
-        pass
+    def update_temporary_nodes(self):
+        roots = [r for r in reversed(subtree_roots_descending(self.k))]
+        cur_temp_node = roots[0] + 1 # node next to the root of the rightmost subtree
+        prev = self.nodes[roots[0]]
+        for i in range(len(roots) - 1):
+            next = combine(self.nodes[roots[i+1]], prev)
+            self.nodes[cur_temp_node] = next
+            prev = next
+            cur_temp_node += 1
 
     def set_element(self, i, v):
         assert 0 <= i < self.k
 
-        # TODO: don't cheat :P
-        new_elements = self.elements[:]
-        new_elements[i] = v
-        new_tree = MerkleTree(new_elements)
+        # tracks the number of leaves on the previous trees
+        # (that is, the index of the first leaf in the current subtree)
+        tree_start = 0
 
-        self.k = new_tree.k
-        self.elements = new_tree.elements
-        self.nodes = new_tree.nodes
+        cur_subtree_width = None
+        for cur_subtree_width in reversed(subtree_widths_ascending(self.k)):
+            if tree_start + cur_subtree_width > i:
+                break
+            else:
+                # move on to the next tree
+                tree_start += cur_subtree_width
+
+        assert cur_subtree_width is not None
+
+        index_in_subtree = i - tree_start # index of the leaf in its subtree
+        
+        # cur_subtree_width is the number of leaves of the current subtree
+
+        x = nth_leaf(i)
+        self.nodes[x] = v # update leaf
+
+        step_size = 2 # if the current node x is a left child (and not the root of the subtree), the parent is x + step_size
+        for bit in bits(index_in_subtree, cur_subtree_width):
+            # move to the parent; increment by 1 if the current node is a right child, by step_size otherwise
+            parent = x + 1 if bit == 1 else x + step_size
+
+            # update current node
+            self.nodes[parent] = combine(self.nodes[parent - step_size], self.nodes[parent - 1])
+
+            x = parent
+
+            step_size *= 2
+
+        resize_list(self.nodes, 2*self.k - 1)
+        # TODO: could optimize slightly by only recomputing the affected temporary nodes
+        self.update_temporary_nodes()
 
     def append_element(self, v):
-        # TODO: don't cheat :P
-        new_elements = self.elements[:]
-        new_elements.append(v)
-        new_tree = MerkleTree(new_elements)
-
-        self.k = new_tree.k
-        self.elements = new_tree.elements
-        self.nodes = new_tree.nodes
+        self.k += 1
+        resize_list(self.nodes, 2*self.k - 1)
+        self.set_element(self.k - 1, v)
 
 
-if __name__ == "__main__":
-    X = MerkleTree()
-    for i in range(12):
-        X.append_element(i)
+def main():
+    X = MerkleTree(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+    print(X.nodes)
+    print([el for el in X.elements()])
+    for i in ["A", "B", "C", "D", "E", "F"]:
+        print(f"Inserting {i}")
+        X.append_element(str(i))
         print(X.nodes)
+        print([el for el in X.elements()])
+if __name__ == "__main__":
+    main()
