@@ -47,6 +47,13 @@ def nth_leaf(n):
     """Returns the index of the n-th leaf"""
     return 2*n - hamming_weight(n)
 
+def A001511():
+    '''Differences of indices of the leaf nodes. Many interpretations, see http://www.research.att.com/projects/OEIS?Anum=A001511'''
+    yield 1
+    for x in A001511():
+        yield x+1
+        yield 1
+
 def subtree_widths_ascending(k):
     """Returns the number of leafs of each of the complete subtrees, starting from the smallest"""
     result = []
@@ -117,9 +124,11 @@ class SegmentTree:
 
     def elements(self):
         """Iterates over all the elements (leafs)."""
-        # TODO: this is O(n log n), can do O(n)
-        for i in range(self.k):
-            yield self.nodes[nth_leaf(i)]
+        i = 0
+        diff = A001511()
+        for _ in range(self.k):
+            yield self.nodes[i]
+            i += next(diff)
 
     def update_temporary_nodes(self):
         roots = [r for r in reversed(subtree_roots_descending(self.k))]
@@ -186,5 +195,6 @@ def main():
         sum_tree.append_element(str(i))
         print(sum_tree.nodes)
         print([el for el in sum_tree.elements()])
+
 if __name__ == "__main__":
     main()
