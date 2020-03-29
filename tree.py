@@ -84,9 +84,6 @@ def resize_list(array, new_size, filling=None):
     else:
         del array[new_size:]
 
-def combine(a, b):
-    return a + b # TODO: change with the concatenated (sorted) hash
-
 
 class SegmentTree:
     """An implicit growable segment-tree"""
@@ -128,7 +125,7 @@ class SegmentTree:
         diff = A001511()
         for _ in range(self.k):
             yield self.nodes[i]
-            i += next(diff)
+            i += next(diff) # pylint: disable=stop-iteration-return
 
     def update_temporary_nodes(self):
         roots = [r for r in reversed(subtree_roots_descending(self.k))]
