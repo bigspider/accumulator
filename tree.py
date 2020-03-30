@@ -48,7 +48,7 @@ def nth_leaf(n):
     return 2*n - hamming_weight(n)
 
 def A001511():
-    '''Differences of indices of the leaf nodes. Many interpretations, see http://www.research.att.com/projects/OEIS?Anum=A001511'''
+    '''Differences of indices of the leaf nodes. Many interpretations, see https://oeis.org/A001511'''
     yield 1
     for x in A001511():
         yield x+1
