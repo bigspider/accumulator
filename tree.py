@@ -7,33 +7,6 @@ def hamming_weight(n):
 
     return result
 
-def zero_lsb(n):
-    """Returns the number obtained by zeroing the least significant 1 of n"""
-    return n & (n - 1)
-
-def lsb(n):
-    """Returns the number obtained by zeroing every bit of n, except its least significant 1"""
-    return n & -n
-
-def msb(n):
-    """
-    For n >= 1, returns the number obtained by zeroing every bit of n, except its most significant 1.
-    Equivalently, returns the highest power of two that is less than or equal to n
-    """
-    assert n >= 1
-    result = 1
-    while 2*result <= n:
-        result *= 2
-    return result
-
-def log2(n):
-    """Return floor(log2(n)) for n >= 1"""
-    result = 0
-    while n > 1:
-        n //= 2
-        result += 1
-    return result
-
 def bits(n, subtree_width):
     """Returns the bits of n, starting from the least significant bit, using log_2(subtree_width) bits."""
     assert 0 <= n < subtree_width
