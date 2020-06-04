@@ -1,4 +1,5 @@
 import hashlib
+from .event import Event
 
 NULL_HASH = bytes([0] * 32)
 
@@ -15,42 +16,57 @@ def log_d(n):
         result += 1
     return result
 
+def H(x):
+    b = x.encode("utf8") if isinstance(x, str) else x
+    return hashlib.sha256(b).digest()
 
 class Accumulator:
-    """An accumulator of size 2^logsize"""
+    def __init__(self):
+        self.k = 0
+        self.S = [NULL_HASH]
+        self.element_added = Event()
 
-    def __init__(self, logsize=20):
-        self.i = 0
-        self.N = 1 << logsize
-        self.D = [NULL_HASH] * (logsize + 1)  # TODO: check if + 1 is needed
+    def __len__(self):
+        return self.k
+
+    def increase_counter(self):
+        self.k += 1
+        if 1 + (1 << (len(self.S) - 1)) <= self.k:
+            self.S.append(None)
 
     def get_state(self, i):
-        return NULL_HASH if i == 0 else self.D[log_d(i)]
+        return NULL_HASH if i == 0 else self.S[log_d(i)]
+
+    def get_root(self):
+        return self.get_state(self.k)
 
     def add(self, x):
-        self.i += 1
-        i = self.i
+        self.increase_counter()
 
-        prev_state = self.get_state(i - 1)
-        other_state = self.get_state(i - d(i))
+        prev_state = self.get_state(self.k - 1)
+        other_state = self.get_state(self.k - d(self.k))
 
         data = x + prev_state + other_state
-        result = hashlib.sha256(data).digest()
+        result = H(data)
 
-        self.D[log_d(i)] = result
+        self.S[log_d(self.k)] = result
+
+        self.element_added.notify(x, result)
         return result
 
+# TODO: make a "prover" that listens to an accumulator and stores all the elements and hashes, and encapsulates the information to generate proofs
+# similarly for a verifier (should it be one class, or two separate classes?)
 
-# Starting from index i, build a proof for state k
-def prove(xs, hashes, i, k):
-    assert k <= i
+# Starting from index i, build a proof for state j
+def prove(xs, hashes, i, j):
+    assert j <= i
 
     result = [xs[i], hashes[i - 1], hashes[i - d(i)]]
-    if i > k:
-        if i - d(i) >= k:
-            result += prove(xs, hashes, i - d(i), k)
+    if i > j:
+        if i - d(i) >= j:
+            result += prove(xs, hashes, i - d(i), j)
         else:
-            result += prove(xs, hashes, i - 1, k)
+            result += prove(xs, hashes, i - 1, j)
 
     return result
 
@@ -65,7 +81,7 @@ def verify(h, i, k, proof, x):
     x_i, s_prev, s_pred = proof[0:3]
 
     # verify that H(x_i|s_prev|s_pred) == h
-    if hashlib.sha256(x_i + s_prev + s_pred).digest() != h:
+    if H(x_i + s_prev + s_pred) != h:
         print("Hash did not match")
         return False
 
@@ -80,11 +96,11 @@ def verify(h, i, k, proof, x):
 
 def main():
     N = 100
-    acc = Accumulator(N)
+    acc = Accumulator()
     hashes = [NULL_HASH]
     xs = [NULL_HASH]
     for i in range(1, N + 1):
-        x = hashlib.sha256(str(i).encode("utf8")).digest()
+        x = H(str(i))
         xs.append(x)
         r = acc.add(x)
         hashes.append(r)
