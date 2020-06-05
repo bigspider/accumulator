@@ -9,12 +9,16 @@ def d(n):
 
 
 # The number of trailing zeros in the binary representation of n
-def log_d(n):
+# also equal to log_2(d(n))
+def zeros(n):
     result = 0
     while n & 1 == 0:
         n = n // 2
         result += 1
     return result
+
+def pred(n):
+    return n - d(n)
 
 def H(x):
     b = x.encode("utf8") if isinstance(x, str) else x
@@ -35,7 +39,7 @@ class Accumulator:
             self.S.append(None)
 
     def get_state(self, i):
-        return NULL_HASH if i == 0 else self.S[log_d(i)]
+        return NULL_HASH if i == 0 else self.S[zeros(i)]
 
     def get_root(self):
         return self.get_state(self.k)
@@ -49,29 +53,42 @@ class Accumulator:
         data = x + prev_state + other_state
         result = H(data)
 
-        self.S[log_d(self.k)] = result
+        self.S[zeros(self.k)] = result
 
-        self.element_added.notify(x, result)
+        self.element_added.notify(self.k, x, result)
         return result
 
-# TODO: make a "prover" that listens to an accumulator and stores all the elements and hashes, and encapsulates the information to generate proofs
-# similarly for a verifier (should it be one class, or two separate classes?)
 
-# Starting from index i, build a proof for state j
-def prove(xs, hashes, i, j):
-    assert j <= i
+class Prover:
+    def __init__(self, accumulator: Accumulator):
+        self.elements = dict([(0, NULL_HASH)])
+        self.R = dict([(0, NULL_HASH)])
+        self.accumulator = accumulator
+        accumulator.element_added += self.element_added
 
-    result = [xs[i], hashes[i - 1], hashes[i - d(i)]]
-    if i > j:
-        if i - d(i) >= j:
-            result += prove(xs, hashes, i - d(i), j)
-        else:
-            result += prove(xs, hashes, i - 1, j)
+    def element_added(self, k, x, r):
+        self.elements[k] = x
+        self.R[k] = r
 
-    return result
+    def prove(self, j):
+        return self.prove_from(len(self.accumulator), j)
+
+    def prove_from(self, i, j):
+        assert j <= i
+        assert i in self.elements and i - 1 in self.R and pred(i) in self.R
+
+        w = [self.elements[i], self.R[i - 1], self.R[pred(i)]]
+        if i > j:
+            if pred(i) >= j:
+                w += self.prove_from(pred(i), j)
+            else:
+                w += self.prove_from(i - 1, j)
+
+        return w
 
 
-# returns True if `proof` is valid for the statment that the element at position k is x, starting from element i that has S(i) = h
+
+# returns True if `w` is a valid proof for the statement that the element at position k is x, starting from element i that has S(i) = h
 def verify(h, i, k, proof, x):
     assert k <= i
     if len(proof) < 3:
@@ -97,6 +114,7 @@ def verify(h, i, k, proof, x):
 def main():
     N = 100
     acc = Accumulator()
+    prover = Prover(acc)
     hashes = [NULL_HASH]
     xs = [NULL_HASH]
     for i in range(1, N + 1):
@@ -105,7 +123,7 @@ def main():
         r = acc.add(x)
         hashes.append(r)
 
-    proof = prove(xs, hashes, 84, 10)
+    proof = prover.prove(10)
 
     verified = verify(hashes[84], 84, 10, proof, xs[10])
     if verified:

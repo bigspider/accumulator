@@ -1,1 +1,1 @@
-from .accumulator import Accumulator, H, NULL_HASH, prove, verify
+from .accumulator import Accumulator, Prover, H, NULL_HASH, verify

@@ -1,4 +1,4 @@
-from accumulator import Accumulator, H, NULL_HASH, prove, verify
+from accumulator import Accumulator, H, NULL_HASH, Prover, verify
 
 import unittest
 
@@ -18,12 +18,13 @@ class BasicTestSuite(unittest.TestCase):
         xs = [None]
         hashes = [NULL_HASH]
         acc = Accumulator()
+        prover = Prover(acc)
         for i in range(1, len(elements)):
             x = H(elements[i])
             xs.append(x)
             hashes.append(acc.add(x))
 
-        w = prove(xs, hashes, len(acc), 1)
+        w = prover.prove(1)
 
         assert verify(acc.get_root(), len(acc), 1, w, xs[1])
 
