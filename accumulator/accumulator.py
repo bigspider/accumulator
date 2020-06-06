@@ -1,7 +1,7 @@
 import hashlib
 from .event import Event
 
-NULL_HASH = bytes([0] * 32)
+NIL = bytes([0] * 32)
 
 # The maximum power of 2 that divides n
 def d(n):
@@ -24,10 +24,11 @@ def H(x):
     b = x.encode("utf8") if isinstance(x, str) else x
     return hashlib.sha256(b).digest()
 
+
 class Accumulator:
     def __init__(self):
         self.k = 0
-        self.S = [NULL_HASH]
+        self.S = [NIL]
         self.element_added = Event()
 
     def __len__(self):
@@ -39,7 +40,7 @@ class Accumulator:
             self.S.append(None)
 
     def get_state(self, i):
-        return NULL_HASH if i == 0 else self.S[zeros(i)]
+        return NIL if i == 0 else self.S[zeros(i)]
 
     def get_root(self):
         return self.get_state(self.k)
@@ -61,8 +62,8 @@ class Accumulator:
 
 class Prover:
     def __init__(self, accumulator: Accumulator):
-        self.elements = dict([(0, NULL_HASH)])
-        self.R = dict([(0, NULL_HASH)])
+        self.elements = dict([(0, NIL)])
+        self.R = dict([(0, NIL)])
         self.accumulator = accumulator
         accumulator.element_added += self.element_added
 
@@ -89,34 +90,34 @@ class Prover:
 
 
 # returns True if `w` is a valid proof for the statement that the element at position k is x, starting from element i that has S(i) = h
-def verify(h, i, k, proof, x):
-    assert k <= i
-    if len(proof) < 3:
-        print("Proof too short")
+def verify(Ri, i, j, w, x):
+    assert j <= i
+    if len(w) < 3:
+        print("Witness too short")
         return False
 
-    x_i, s_prev, s_pred = proof[0:3]
+    x_i, R_prev, R_pred = w[0:3]
 
-    # verify that H(x_i|s_prev|s_pred) == h
-    if H(x_i + s_prev + s_pred) != h:
+    # verify that H(x_i|R_prev|R_pred) == Ri
+    if H(x_i + R_prev + R_pred) != Ri:
         print("Hash did not match")
         return False
 
-    if i == k:
+    if i == j:
         return x_i == x
-    else:  # i > k
-        if i - d(i) >= k:
-            return verify(s_pred, i - d(i), k, proof[3:], x)
+    else:  # i > j
+        if pred(i) >= j:
+            return verify(R_pred, pred(i), j, w[3:], x)
         else:
-            return verify(s_prev, i - 1, k, proof[3:], x)
+            return verify(R_prev, i - 1, j, w[3:], x)
 
 
 def main():
     N = 100
     acc = Accumulator()
     prover = Prover(acc)
-    hashes = [NULL_HASH]
-    xs = [NULL_HASH]
+    hashes = [NIL]
+    xs = [NIL]
     for i in range(1, N + 1):
         x = H(str(i))
         xs.append(x)

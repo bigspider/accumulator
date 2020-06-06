@@ -1,6 +1,9 @@
-from accumulator import Accumulator, H, NULL_HASH, Prover, verify
+from accumulator import Accumulator, H, NIL, Prover, verify
 
 import unittest
+
+plain_elements = ["some", "small", "list", "of", "distinct", "elements"]
+elements = [H(el) for el in plain_elements]
 
 
 class BasicTestSuite(unittest.TestCase):
@@ -8,25 +11,24 @@ class BasicTestSuite(unittest.TestCase):
 
     def test_size(self):
         acc = Accumulator()
-        acc.add(H("first"))
-        acc.add(H("another"))
-        acc.add(H("element"))
-        assert len(acc) == 3
+        assert(len(acc) == 0)
+        for i in range(len(elements)):
+            acc.add(elements[i])
+            assert len(acc) == i + 1
 
-    def test_proof(self):
-        elements = [None, "some", "small", "list", "of", "elements"]
-        xs = [None]
-        hashes = [NULL_HASH]
+    def test_prove_verify_all(self):
         acc = Accumulator()
         prover = Prover(acc)
-        for i in range(1, len(elements)):
-            x = H(elements[i])
-            xs.append(x)
-            hashes.append(acc.add(x))
+        R = [NIL]
+        for el in elements:
+            acc.add(el)
+            R.append(acc.get_root())
 
-        w = prover.prove(1)
+        for j in range(1, len(elements) + 1):
+            w = prover.prove(j)
 
-        assert verify(acc.get_root(), len(acc), 1, w, xs[1])
+            result = verify(acc.get_root(), len(acc), j, w, elements[j-1])
+            assert result
 
 if __name__ == '__main__':
     unittest.main()
