@@ -1,51 +1,81 @@
 import hashlib
+from typing import Union
 from .event import Event
 
 NIL = bytes([0] * 32)
 
-# The maximum power of 2 that divides n
-def d(n):
+def d(n: int) -> int:
+    """Return the maximum power of two that divides n. Return 0 for n == 0."""
     return n & (~(n - 1))
 
 
 # The number of trailing zeros in the binary representation of n
 # also equal to log_2(d(n))
-def zeros(n):
+def zeros(n: int) -> int:
+    """Return the number of trailing zeros in the binary representation of n.
+    Return 0 if n == 0."""
+
     result = 0
     while n & 1 == 0:
         n = n // 2
         result += 1
     return result
 
-def pred(n):
+def pred(n: int) -> int:
+    """Return the number obtained by zeroing the least significant 1 digit in the binary
+    represenation of n. Return 0 if n == 0."""
+
     return n - d(n)
 
-def H(x):
+def H(x: Union[str, bytes]) -> bytes:
+    """If x an array of bytes, return the sha256 digest of it.
+    If x if a string, convert it to bytes using utf8 encoding first, then return the digest."""
     b = x.encode("utf8") if isinstance(x, str) else x
     return hashlib.sha256(b).digest()
 
 
 class Accumulator:
+    """
+    Maintains the public state of the accumulator.
+    Allows to add elements that should be in the domain of the hash function H, and can add new
+    elements, updating the state of the accumulator accordingly.
+    Does not hold enough information to produce proofs; instead, whenever a new element is added,
+    notifies all listeners of `element_added` with the new value of the counter, the new element
+    and the new root hash of the accumulator.
+    """
+
     def __init__(self):
         self.k = 0
         self.S = [NIL]
         self.element_added = Event()
 
     def __len__(self):
+        """Returns `k`, the total number of elements in this accumulator."""
         return self.k
 
     def increase_counter(self):
-        self.k += 1
-        if 1 + (1 << (len(self.S) - 1)) <= self.k:
+        """Increases the counter before adding a new element, and adds a new slot to S if necessary.
+        S is extended if k is a power of 2 before being incremented."""
+        if self.k == d(self.k):
             self.S.append(None)
+        self.k += 1
 
-    def get_state(self, i):
+    # TODO: find better name
+    def get_state(self, i: int) -> bytes:
+        """Return the accumulator's value R_i, as long as `i` is the largest number divisible by d(i)
+        and not greater than k.
+        Return NIL if i == 0.
+        """
         return NIL if i == 0 else self.S[zeros(i)]
 
-    def get_root(self):
+    def get_root(self) -> bytes:
+        """Return the current value of the accumulator."""
         return self.get_state(self.k)
 
-    def add(self, x):
+    def add(self, x: bytes) -> bytes:
+        """
+        Insert the new element `x` into the accumulator.
+        """
         self.increase_counter()
 
         prev_state = self.get_state(self.k - 1)
