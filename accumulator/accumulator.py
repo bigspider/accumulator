@@ -1,5 +1,5 @@
 import hashlib
-from typing import Union
+from typing import Union, List
 from .event import Event
 
 NIL = bytes([0] * 32)
@@ -91,20 +91,29 @@ class Accumulator:
 
 
 class Prover:
+    """
+    Listens to updates from an `Accumulator`, and stores the necessary information to create
+    witnesses for any element added to the accumulator after this instance is created.
+    """
     def __init__(self, accumulator: Accumulator):
         self.elements = dict([(0, NIL)])
         self.R = dict([(0, NIL)])
         self.accumulator = accumulator
         accumulator.element_added += self.element_added
 
-    def element_added(self, k, x, r):
+    def element_added(self, k: int, x: bytes, r: bytes):
+        """Listener for events from the accumulator.
+        Records each added element, and the corresponding accumulator value."""
         self.elements[k] = x
         self.R[k] = r
 
-    def prove(self, j):
+    def prove(self, j: int) -> List[bytes]:
+        """Produce a witness for the j-th element added to the accumulator"""
         return self.prove_from(len(self.accumulator), j)
 
-    def prove_from(self, i, j):
+    def prove_from(self, i: int, j: int) -> List[bytes]:
+        """Produce a witness for the j-th element of the accumulator, starting from the root when
+        the i-th element was added."""
         assert j <= i
         assert i in self.elements and i - 1 in self.R and pred(i) in self.R
 
@@ -120,7 +129,11 @@ class Prover:
 
 
 # returns True if `w` is a valid proof for the statement that the element at position k is x, starting from element i that has S(i) = h
-def verify(Ri, i, j, w, x):
+def verify(Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
+    """
+    Verify that `w` is a valid proof that the the `j`-th element added to the accumulator is `x`,
+    given that the value of the accumulator after the `i`-th element was added is `Ri`.
+    """
     assert j <= i
     if len(w) < 3:
         print("Witness too short")
@@ -140,28 +153,3 @@ def verify(Ri, i, j, w, x):
             return verify(R_pred, pred(i), j, w[3:], x)
         else:
             return verify(R_prev, i - 1, j, w[3:], x)
-
-
-def main():
-    N = 100
-    acc = Accumulator()
-    prover = Prover(acc)
-    hashes = [NIL]
-    xs = [NIL]
-    for i in range(1, N + 1):
-        x = H(str(i))
-        xs.append(x)
-        r = acc.add(x)
-        hashes.append(r)
-
-    proof = prover.prove(10)
-
-    verified = verify(hashes[84], 84, 10, proof, xs[10])
-    if verified:
-        print("Proof passed verification")
-    else:
-        print("Proof did not pass verification")
-
-
-if __name__ == "__main__":
-    main()
