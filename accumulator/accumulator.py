@@ -60,7 +60,6 @@ class Accumulator:
             self.S.append(None)
         self.k += 1
 
-    # TODO: find better name
     def get_state(self, i: int) -> bytes:
         """Return the accumulator's value R_i, as long as `i` is the largest number divisible by d(i)
         and not greater than k.
