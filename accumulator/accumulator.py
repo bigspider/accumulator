@@ -1,12 +1,6 @@
-import hashlib
 from typing import Union, List
 from .event import Event
-
-NIL = bytes([0] * 32)
-
-def d(n: int) -> int:
-    """Return the maximum power of two that divides n. Return 0 for n == 0."""
-    return n & (~(n - 1))
+from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2
 
 
 # The number of trailing zeros in the binary representation of n
@@ -26,12 +20,6 @@ def pred(n: int) -> int:
     represenation of n. Return 0 if n == 0."""
 
     return n - d(n)
-
-def H(x: Union[str, bytes]) -> bytes:
-    """If x an array of bytes, return the sha256 digest of it.
-    If x if a string, convert it to bytes using utf8 encoding first, then return the digest."""
-    b = x.encode("utf8") if isinstance(x, str) else x
-    return hashlib.sha256(b).digest()
 
 
 class Accumulator:
@@ -56,7 +44,7 @@ class Accumulator:
     def increase_counter(self):
         """Increases the counter before adding a new element, and adds a new slot to S if necessary.
         S is extended if k is a power of 2 before being incremented."""
-        if self.k == d(self.k):
+        if is_power_of_2(self.k):
             self.S.append(None)
         self.k += 1
 

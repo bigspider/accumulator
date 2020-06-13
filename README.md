@@ -18,5 +18,5 @@ Current progress on the writeup:
 - Second construction is only a sketch.
 
 Code in this repo:
-- [accumulator/accumulator.py](accumulator.py) - simple implementation of the first construction.
+- [accumulator.py](accumulator/accumulator.py) - simple implementation of the first construction.
 
