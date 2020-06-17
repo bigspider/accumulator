@@ -6,8 +6,8 @@ plain_elements = ["some", "small", "list", "of", "distinct", "elements"]
 elements = [H(el) for el in plain_elements]
 
 
-class BasicTestSuite(unittest.TestCase):
-    """Basic test cases."""
+class AccumulatorTestSuite(unittest.TestCase):
+    """Simple accumulator test cases."""
 
     def test_size(self):
         acc = Accumulator()

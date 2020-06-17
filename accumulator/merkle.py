@@ -15,6 +15,9 @@ def left_child(n: int) -> int:
 def right_child(n: int) -> int:
     return 2 * n + 2
 
+def merge_hashes(h1: bytes, h2: bytes) -> bytes:
+    return H(h1 + h2) if h1 < h2 else H(h2 + h1)
+
 class MerkleTree:
     def __init__(self):
         self.k = 0
@@ -30,7 +33,7 @@ class MerkleTree:
         return self.capacity - 1
 
     def fix_node(self, i: int) -> None:
-        self.nodes[i] = H(self.nodes[left_child(i)] + self.nodes[right_child(i)])
+        self.nodes[i] = merge_hashes(self.nodes[left_child(i)], self.nodes[right_child(i)])
 
     def fix_up(self, i: int) -> None:
         while i > 0:
@@ -46,6 +49,7 @@ class MerkleTree:
         initial_first_leaf = self.first_leaf
         self.capacity *= 2
 
+        self.nodes += [NIL] * (2 * initial_capacity)
         for j in range(initial_capacity):
             self.nodes[self.first_leaf + j] = self.nodes[initial_first_leaf + j]
 
@@ -66,6 +70,10 @@ class MerkleTree:
     def get(self, i: int) -> bytes:
         return self.nodes[self.first_leaf + i]
 
+    @property
+    def root(self):
+        return self.nodes[0]
+
     def prove_leaf(self, index: int) -> List[bytes]:
         i = self.first_leaf + index
         proof = [self.nodes[i]]
@@ -83,11 +91,13 @@ class MerkleTree:
 
 
 def merkle_proof_verify(root: bytes, proof: List[bytes]) -> bool:
-    if len(proof) < 1:
+    if len(proof) < 2:
         return False
+
+    i = proof[0]
 
     h = proof[0]
     for l in proof[1:]:
-        h = H(h + l)
+        h = merge_hashes(h, l)
 
     return h == root
