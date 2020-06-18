@@ -1,50 +1,62 @@
 from .common import NIL, H
 from typing import List
 
-# A dynamic Merkle tree. Can add leafs or change existing leafs, but cannot remove leafs.
-# Leafs are already assumed to be in the domain of the hash function. Each internal node is the hash of the concatenation of the two leaves.
-
-# for a tree with n leafs, with adding a leaf is amortized log(n), editing is worst case log(n)
+# Helper functions for representing a binary tree in a zero-indexed array
 
 def parent(n: int) -> int:
+    """Return the index of the parent of the node with a positive index n."""
     return (n - 1) // 2
 
 def left_child(n: int) -> int:
+    """Return the left child of a node with non-negative index n."""
     return 2 * n + 1
 
 def right_child(n: int) -> int:
+    """Return the right child of a node with non-negative index n."""
     return 2 * n + 2
 
-def merge_hashes(h1: bytes, h2: bytes) -> bytes:
-    return H(h1 + h2) if h1 < h2 else H(h2 + h1)
-
 class MerkleTree:
+    """
+    Maintains a complete Merkle tree, it is possible to insert leaves or change existing leaves; it
+    is not possible to remove leaves. The tree is always kept at the minimum capacity that is a
+    power of 2 an is enough to contain all the leaves; for example, if 13 leaves have been added,
+    16 nodes are reserved for leaves; leaves for missing values contain NIL. The value of each
+    internal node is the hash of the values of the left child, concatenated to the value of the
+    right child.
+    """
     def __init__(self):
         self.k = 0
         self.capacity = 1 # current capacity; always a power of two
         self.nodes = [NIL]
 
     def __len__(self) -> int:
-        """Returns the total number of leafs in the tree."""
+        """Return the total number of leaves in the tree."""
         return self.k
 
     @property
     def first_leaf(self) -> int:
+        """Return the falue of the first node for a leaf in the array."""
         return self.capacity - 1
 
     def fix_node(self, i: int) -> None:
-        self.nodes[i] = merge_hashes(self.nodes[left_child(i)], self.nodes[right_child(i)])
+        """Set the value of the ni=ode with index `i` to the hash of the concatenation of the
+        two children of i."""
+        self.nodes[i] = H(self.nodes[left_child(i)] + self.nodes[right_child(i)])
 
     def fix_up(self, i: int) -> None:
+        """For each node in the ancestry of `i` (not including `i`), execute fix_node."""
         while i > 0:
             i = parent(i)
             self.fix_node(i)
 
     def recompute_internal_nodes(self) -> None:
+        """Recompute all the internal nodes. Cost: O(n)."""
         for i in range(self.first_leaf - 1, -1, -1):
             self.fix_node(i)
 
     def double_capacity(self) -> None:
+        """Doubles the capacity of the tree, moving the leaves down one level and recomputing the
+        whole tree. Cost: O(n)."""
         initial_capacity = self.capacity
         initial_first_leaf = self.first_leaf
         self.capacity *= 2
@@ -56,6 +68,8 @@ class MerkleTree:
         self.recompute_internal_nodes()
 
     def add(self, x: bytes) -> None:
+        """Add an element as new leaf, and recompute the tree accordingly. Cost O(log n) amortized;
+        Cost is O(n) when the capacity needs to be doubled."""
         if self.k == self.capacity:
             self.double_capacity()
 
@@ -63,20 +77,25 @@ class MerkleTree:
         self.set(self.k - 1, x)
 
     def set(self, index: int, x: bytes) -> None:
+        """Set the value of the leaf at position `index` to `x`, recomputing the tree accordingly.
+        Cost: O(log n)."""
         leaf = self.first_leaf + index
         self.nodes[leaf] = x
         self.fix_up(leaf)
 
     def get(self, i: int) -> bytes:
+        """Return the value of the leaf with index `i`, where 0 <= i < capacity."""
         return self.nodes[self.first_leaf + i]
 
     @property
-    def root(self):
+    def root(self) -> bytes:
+        """Return the Merkle root."""
         return self.nodes[0]
 
     def prove_leaf(self, index: int) -> List[bytes]:
+        """Produce a proof of membership for the leaf with index `i`, where 0 <= i < capacity."""
         i = self.first_leaf + index
-        proof = [self.nodes[i]]
+        proof = []
         while i > 0:
             if index % 2 == 0:
                 sibling = i + 1
@@ -90,14 +109,16 @@ class MerkleTree:
         return proof
 
 
-def merkle_proof_verify(root: bytes, proof: List[bytes]) -> bool:
-    if len(proof) < 2:
-        return False
+def merkle_proof_verify(root: bytes, element: bytes, index: int, proof: List[bytes]) -> bool:
+    """Verify that `proof` is a valid membership proof for the statement that the leaf with
+    index `index` is equal to `element` in the tree with the given Merkle `root`."""
+    cur_hash = element
+    for h in proof:
+        if index % 2 == 0:
+            cur_hash = H(cur_hash + h)
+        else:
+            cur_hash = H(h + cur_hash)
 
-    i = proof[0]
+        index = index // 2
 
-    h = proof[0]
-    for l in proof[1:]:
-        h = merge_hashes(h, l)
-
-    return h == root
+    return cur_hash == root

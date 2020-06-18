@@ -1,4 +1,4 @@
-from accumulator import H, MerkleTree, merge_hashes, NIL, merkle_proof_verify
+from accumulator import H, MerkleTree, NIL, merkle_proof_verify
 
 import unittest
 
@@ -61,34 +61,42 @@ class MerkleTestSuite(unittest.TestCase):
         merkle_tree = MerkleTree()
         merkle_tree.add(elements[0])
         merkle_tree.add(elements[1])
-        assert merkle_tree.root == merge_hashes(elements[0], elements[1])
+        assert merkle_tree.root == H(elements[0] + elements[1])
 
     def test_root_3(self):
         merkle_tree = MerkleTree()
         merkle_tree.add(elements[0])
         merkle_tree.add(elements[1])
         merkle_tree.add(elements[2])
-        H01 = merge_hashes(elements[0], elements[1])
-        H2NIL = merge_hashes(elements[2], NIL)
-        assert merkle_tree.root == merge_hashes(H01, H2NIL)
+        H01 = H(elements[0] + elements[1])
+        H2NIL = H(elements[2] + NIL)
+        assert merkle_tree.root == H(H01 + H2NIL)
 
     def test_proof(self):
         merkle_tree = MerkleTree()
         for el in elements:
             merkle_tree.add(el)
-        
-        p = merkle_tree.prove_leaf(3)  # 'of'
-        assert p[0] == elements[3]
-        # TODO
+
+        H01 = H(elements[0] + elements[1])
+        H45 = H(elements[4] + elements[5])
+        H67 = H(NIL + NIL)
+        H4567 = H(H45 + H67)
+
+        p = merkle_tree.prove_leaf(3)  # H('of')
+        assert p[0] == elements[2] # sibling of leaf 3
+        assert p[1] == H01
+        assert p[2] == H4567
 
     def test_prove_verify(self):
         merkle_tree = MerkleTree()
         for el in elements:
             merkle_tree.add(el)
-        
+
+        # for each pair i, j, try if the proof for element i passes when given element j. Should be true iff i == j
         for i in range(len(elements)):
             p = merkle_tree.prove_leaf(i)
-            assert merkle_proof_verify(merkle_tree.root, p) == True
+            for j in range(len(elements)):
+                assert merkle_proof_verify(merkle_tree.root, elements[j], i, p) == (i == j)
 
 
 if __name__ == '__main__':
