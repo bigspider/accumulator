@@ -1,6 +1,7 @@
-from typing import Union, List
+from typing import List
 from .event import Event
-from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred
+from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred, rpred
+from .merkle import MerkleTree, merkle_proof_verify
 
 
 class Accumulator:
@@ -15,7 +16,7 @@ class Accumulator:
 
     def __init__(self):
         self.k = 0
-        self.S = [NIL]
+        self.S = MerkleTree()
         self.element_added = Event()
 
     def __len__(self):
@@ -26,7 +27,7 @@ class Accumulator:
         """Increases the counter before adding a new element, and adds a new slot to S if necessary.
         S is extended if k is a power of 2 before being incremented."""
         if is_power_of_2(self.k):
-            self.S.append(None)
+            self.S.add(NIL)
         self.k += 1
 
     def get_state(self, i: int) -> bytes:
@@ -34,7 +35,7 @@ class Accumulator:
         and not greater than k.
         Return NIL if i == 0.
         """
-        return NIL if i == 0 else self.S[zeros(i)]
+        return NIL if i == 0 else self.S.get([zeros(i)])
 
     def get_root(self) -> bytes:
         """Return the current value of the accumulator."""
@@ -44,15 +45,15 @@ class Accumulator:
         """
         Insert the new element `x` into the accumulator.
         """
+        prev_state = self.get_state(self.k)
+        M_k_1 = self.S.root
+
         self.increase_counter()
 
-        prev_state = self.get_state(self.k - 1)
-        other_state = self.get_state(self.k - d(self.k))
-
-        data = x + prev_state + other_state
+        data = x + prev_state + M_k_1
         result = H(data)
 
-        self.S[zeros(self.k)] = result
+        self.S.set(zeros(self.k), result)
 
         self.element_added.notify(self.k, x, result)
         return result
@@ -85,6 +86,9 @@ class Prover:
         assert j <= i
         assert i in self.elements and i - 1 in self.R and pred(i) in self.R
 
+        # TODO:
+        # Build the Merkle tree for i - 1, make the correct proof using rpred
+
         w = [self.elements[i], self.R[i - 1], self.R[pred(i)]]
         if i > j:
             if pred(i) >= j:
@@ -102,6 +106,9 @@ def verify(Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
     Verify that `w` is a valid proof that the the `j`-th element added to the accumulator is `x`,
     given that the value of the accumulator after the `i`-th element was added is `Ri`.
     """
+
+    # TODO: finish this
+
     assert j <= i
     if len(w) < 3:
         print("Witness too short")
