@@ -40,6 +40,19 @@ class MerkleTestSuite(unittest.TestCase):
         merkle_tree.add(elements[5])
         assert merkle_tree.capacity == 8
 
+    def test_construct(self):
+        for i in range(len(elements)):
+            # check if the Merkle trees obtained by adding the first i elements,
+            # or constructing directing with the first i elements, are identical.
+            mt1 = MerkleTree()
+            for el in elements[:i]:
+                mt1.add(el)
+            mt2 = MerkleTree(elements[:i])
+
+            assert mt1.k == mt2.k and mt1.capacity == mt2.capacity
+            assert len(mt1.nodes) == len(mt2.nodes)
+            for j in range(len(mt1.nodes)):
+                assert mt1.nodes[j] == mt2.nodes[j]
 
     def test_add_many(self):
         merkle_tree = MerkleTree()

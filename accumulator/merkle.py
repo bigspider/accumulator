@@ -24,10 +24,20 @@ class MerkleTree:
     internal node is the hash of the values of the left child, concatenated to the value of the
     right child.
     """
-    def __init__(self):
-        self.k = 0
-        self.capacity = 1 # current capacity; always a power of two
-        self.nodes = [NIL]
+    def __init__(self, elements: List[bytes] = []):
+        # TODO: add ability to create a tree with an initial set of elements
+
+        self.k = len(elements)
+
+        # set current capacity to the smallest power of 2 that is at least len(elements)
+        self.capacity = 1
+        while self.capacity < self.k:
+            self.capacity = self.capacity * 2
+
+        self.nodes = [NIL] * (2 * self.capacity - 1)
+        for i in range(len(elements)):
+            self.nodes[self.first_leaf + i] = elements[i]
+        self.recompute_internal_nodes() 
 
     def __len__(self) -> int:
         """Return the total number of leaves in the tree."""
@@ -35,11 +45,11 @@ class MerkleTree:
 
     @property
     def first_leaf(self) -> int:
-        """Return the falue of the first node for a leaf in the array."""
+        """Return the value of the first node for a leaf in the array."""
         return self.capacity - 1
 
     def fix_node(self, i: int) -> None:
-        """Set the value of the ni=ode with index `i` to the hash of the concatenation of the
+        """Set the value of the node with index `i` to the hash of the concatenation of the
         two children of i."""
         self.nodes[i] = H(self.nodes[left_child(i)] + self.nodes[right_child(i)])
 
@@ -86,6 +96,14 @@ class MerkleTree:
     def get(self, i: int) -> bytes:
         """Return the value of the leaf with index `i`, where 0 <= i < capacity."""
         return self.nodes[self.first_leaf + i]
+
+    def copy(self):
+        """Return an identical copy of this Merkle tree."""
+        result = MerkleTree()
+        result.k = self.k
+        result.capacity = self.capacity
+        result.nodes = self.nodes.copy()
+        return result
 
     @property
     def root(self) -> bytes:

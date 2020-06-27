@@ -1,6 +1,6 @@
 from typing import List
 from .event import Event
-from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred, rpred
+from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred, rpred, hook_index, floor_lg
 from .merkle import MerkleTree, merkle_proof_verify
 
 
@@ -45,12 +45,11 @@ class Accumulator:
         """
         Insert the new element `x` into the accumulator.
         """
-        prev_state = self.get_state(self.k)
         M_k_1 = self.S.root
 
         self.increase_counter()
 
-        data = x + prev_state + M_k_1
+        data = x + M_k_1
         result = H(data)
 
         self.S.set(zeros(self.k), result)
@@ -68,13 +67,33 @@ class Prover:
         self.elements = dict([(0, NIL)])
         self.R = dict([(0, NIL)])
         self.accumulator = accumulator
+        self.initial_k = accumulator.k
+        self.initial_S = accumulator.S.copy()
         accumulator.element_added += self.element_added
 
-    def element_added(self, k: int, x: bytes, r: bytes):
+    def element_added(self, k: int, x: bytes, r: bytes, M: MerkleTree):
         """Listener for events from the accumulator.
         Records each added element, and the corresponding accumulator value."""
         self.elements[k] = x
         self.R[k] = r
+
+    def make_tree(self, n: int):
+        """Constructs the merkle tree M_n"""
+        t = 0
+        i = 1 # 2**t
+        S = []
+        while i <= n:
+            # find the largest number less than or equal than n and divisible by i but not by 2i (that is, ends with exactly t zeros)
+            idx = hook_index(n, t)
+            if idx > self.initial_k:
+                S.append(self.R[idx]) # we have seen the value since the creation of this Prover
+            else:
+                S.append(self.initial_S[t]) # unchanged since the creation of this Prover; copy value from the initial_S 
+
+            t = t + 1
+            i = i * 2
+
+        return MerkleTree(S)
 
     def prove(self, j: int) -> List[bytes]:
         """Produce a witness for the j-th element added to the accumulator"""
@@ -83,18 +102,20 @@ class Prover:
     def prove_from(self, i: int, j: int) -> List[bytes]:
         """Produce a witness for the j-th element of the accumulator, starting from the root when
         the i-th element was added."""
-        assert j <= i
+        assert self.initial_k <= j <= i
         assert i in self.elements and i - 1 in self.R and pred(i) in self.R
 
-        # TODO:
         # Build the Merkle tree for i - 1, make the correct proof using rpred
-
-        w = [self.elements[i], self.R[i - 1], self.R[pred(i)]]
+        M_prev = self.make_tree(i - 1)
+        w = [self.elements[i], M_prev.root]
         if i > j:
-            if pred(i) >= j:
-                w += self.prove_from(pred(i), j)
-            else:
-                w += self.prove_from(i - 1, j)
+            i_next = rpred(i - 1, j)
+            leaf_index = zeros(i_next)
+
+            w.append(M_prev.get(leaf_index))
+            w += M_prev.prove_leaf(leaf_index)
+
+            w += self.prove_from(i_next, j)
 
         return w
 
@@ -107,24 +128,31 @@ def verify(Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
     given that the value of the accumulator after the `i`-th element was added is `Ri`.
     """
 
-    # TODO: finish this
-
-    assert j <= i
-    if len(w) < 3:
+    assert 1 <= j <= i
+    if len(w) < 2:
         print("Witness too short")
         return False
 
-    x_i, R_prev, R_pred = w[0:3]
+    x_i, M_prev_root = w[0:2]
 
-    # verify that H(x_i|R_prev|R_pred) == Ri
-    if H(x_i + R_prev + R_pred) != Ri:
+    # verify that H(x_i|M_prev_root) == Ri
+    if H(x_i + M_prev_root) != Ri:
         print("Hash did not match")
         return False
 
     if i == j:
         return x_i == x
     else:  # i > j
-        if pred(i) >= j:
-            return verify(R_pred, pred(i), j, w[3:], x)
-        else:
-            return verify(R_prev, i - 1, j, w[3:], x)
+        i_next = rpred(i - 1, j)
+        leaf_index = zeros(i_next)
+        leaf = w[2]
+
+        merkle_tree_height = floor_lg(i - 1)
+        merkle_proof = w[3:3 + merkle_tree_height]
+        w_rest = w[3 + merkle_tree_height:]
+
+        if not merkle_proof_verify(M_prev_root, leaf, leaf_index, merkle_proof):
+            print("Merkle proof failed")
+            return False
+        
+        return verify(leaf, i_next, j, w_rest, x)

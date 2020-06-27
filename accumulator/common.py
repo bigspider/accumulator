@@ -7,6 +7,25 @@ def highest_divisor_power_of_2(n: int) -> int:
     """Return the maximum power of two that divides n. Return 0 for n == 0."""
     return n & (~(n - 1))
 
+def floor_lg(n: int) -> int:
+    """Return floor(log_2(n))."""
+    r = 0
+    t = 1
+    while 2 * t <= n:
+        t = 2 * t
+        r = r + 1
+    return r
+
+def ceil_lg(n: int) -> int:
+    """Return ceiling(log_2(n))."""
+    r = 0
+    t = 1
+    while t < n:
+        t = 2 * t
+        r = r + 1
+    return r
+
+
 def is_power_of_2(n: int) -> bool:
     return n & (n - 1) == 0
 
@@ -35,6 +54,17 @@ def rpred(n: int, m: int) -> int:
     while pred(n) >= m:
         n = pred(n)
     return n
+
+
+def hook_index(n: int, t: int) -> int:
+    """For integers n and t, finds the largest number not greater than n such that the binary
+    representation of n has exactly t zeros."""
+    d = 1 << t
+    r = n & ~(d - 1) # zero the last t bits of n
+    if n & d != 0:
+        return r
+    else:
+        return (r - 1) & ~(d - 1) # zero the last t bits of r - 1
 
 def H(x: Union[str, bytes]) -> bytes:
     """If x an array of bytes, return the sha256 digest of it.
