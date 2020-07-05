@@ -96,7 +96,8 @@ class Prover:
 
 
 
-# returns True if `w` is a valid proof for the statement that the element at position k is x, starting from element i that has S(i) = h
+# returns True if `w` is a valid proof for the statement that the element at position j is x, starting from element i
+# that has accumulator's root Ri
 def verify(Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
     """
     Verify that `w` is a valid proof that the the `j`-th element added to the accumulator is `x`,
@@ -109,7 +110,7 @@ def verify(Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
 
     x_i, R_prev, R_pred = w[0:3]
 
-    # verify that H(x_i|R_prev|R_pred) == Ri
+    # verify that H(x_i||R_prev||R_pred) == Ri
     if H(x_i + R_prev + R_pred) != Ri:
         print("Hash did not match")
         return False
