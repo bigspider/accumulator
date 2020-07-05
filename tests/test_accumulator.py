@@ -11,10 +11,10 @@ class AccumulatorTestSuite(unittest.TestCase):
 
     def test_size(self):
         acc = Accumulator()
-        assert(len(acc) == 0)
+        self.assertEqual(len(acc), 0)
         for i in range(len(elements)):
             acc.add(elements[i])
-            assert len(acc) == i + 1
+            self.assertEqual(len(acc), i + 1)
 
     def test_prove_verify_all(self):
         acc = Accumulator()
@@ -28,7 +28,7 @@ class AccumulatorTestSuite(unittest.TestCase):
             w = prover.prove(j)
 
             result = verify(acc.get_root(), len(acc), j, w, elements[j-1])
-            assert result
+            self.assertTrue(result)
 
 if __name__ == '__main__':
     unittest.main()
