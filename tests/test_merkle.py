@@ -9,6 +9,15 @@ elements = [H(el) for el in plain_elements]
 class MerkleTestSuite(unittest.TestCase):
     """Merkle tree implementation test cases."""
 
+    def assertMerkleTreesEqual(self, mt1, mt2):
+        """Checks that `mt1` and `mt2` are identically equal MerkleTrees"""
+        self.assertEqual(mt1.k, mt2.k)
+        self.assertEqual(mt1.capacity, mt2.capacity)
+        self.assertEqual(len(mt1.nodes), len(mt2.nodes))
+        for j in range(len(mt1.nodes)):
+            self.assertEqual(mt1.nodes[j], mt2.nodes[j])
+
+
     def test_add_1(self):
         merkle_tree = MerkleTree()
         self.assertEqual(len(merkle_tree), 0)
@@ -23,6 +32,36 @@ class MerkleTestSuite(unittest.TestCase):
         self.assertEqual(len(merkle_tree), 2)
         self.assertEqual(merkle_tree.get(0), elements[0])
         self.assertEqual(merkle_tree.get(1), elements[1])
+
+    def test_set(self):
+        new_el = H("something new")
+        for i in range(len(elements)):
+            # check if the Merkle trees obtained by adding the first i elements, and then setting the i
+            # or constructing directing with the first i elements, are identical.
+            mt1 = MerkleTree(elements)
+            mt1.set(i, new_el)
+
+            elements_modified = elements[:i] + [new_el] + elements[i+1:]
+            mt2 = MerkleTree(elements_modified)
+
+            self.assertMerkleTreesEqual(mt1, mt2)
+
+    def test_add_many(self):
+        merkle_tree = MerkleTree()
+        for i in range(len(elements)):
+            merkle_tree.add(elements[i])
+            self.assertEqual(len(merkle_tree), i + 1)
+            self.assertEqual(merkle_tree.get(i), elements[i])
+
+    def test_set_k(self):
+        # tests that setting the k-th element has exactly the same effect as adding a new element
+        mt1 = MerkleTree()
+        mt2 = MerkleTree()
+        for i in range(len(elements)):
+            mt1.add(elements[i])
+            mt2.set(mt2.k, elements[i])
+            self.assertMerkleTreesEqual(mt1, mt2)
+
 
     def test_capacity(self):
         merkle_tree = MerkleTree()
@@ -49,18 +88,7 @@ class MerkleTestSuite(unittest.TestCase):
                 mt1.add(el)
             mt2 = MerkleTree(elements[:i])
 
-            self.assertEqual(mt1.k, mt2.k)
-            self.assertEqual(mt1.capacity, mt2.capacity)
-            self.assertEqual(len(mt1.nodes), len(mt2.nodes))
-            for j in range(len(mt1.nodes)):
-                self.assertEqual(mt1.nodes[j], mt2.nodes[j])
-
-    def test_add_many(self):
-        merkle_tree = MerkleTree()
-        for i in range(len(elements)):
-            merkle_tree.add(elements[i])
-            self.assertEqual(len(merkle_tree), i + 1)
-            self.assertEqual(merkle_tree.get(i), elements[i])
+            self.assertMerkleTreesEqual(mt1, mt2)
 
     def test_root_0(self):
         merkle_tree = MerkleTree()

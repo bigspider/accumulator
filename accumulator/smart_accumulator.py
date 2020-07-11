@@ -23,13 +23,6 @@ class SmartAccumulator:
         """Returns `k`, the total number of elements in this accumulator."""
         return self.k
 
-    def increase_counter(self):
-        """Increases the counter before adding a new element, and adds a new slot to S if necessary.
-        S is extended if k is a power of 2 after being incremented."""
-        self.k += 1
-        if is_power_of_2(self.k):
-            self.S.add(NIL)
-
     def get_state(self, i: int) -> bytes:
         """Return the accumulator's value R_i, as long as `i` is the largest number divisible by d(i)
         and not greater than k.
@@ -47,7 +40,7 @@ class SmartAccumulator:
         """
         M_k_1 = self.S.root
 
-        self.increase_counter()
+        self.k += 1
 
         result = H(x + M_k_1)
 

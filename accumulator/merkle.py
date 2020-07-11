@@ -80,15 +80,25 @@ class MerkleTree:
     def add(self, x: bytes) -> None:
         """Add an element as new leaf, and recompute the tree accordingly. Cost O(log n) amortized;
         Cost is O(n) when the capacity needs to be doubled."""
-        if self.k == self.capacity:
-            self.double_capacity()
-
-        self.k += 1
-        self.set(self.k - 1, x)
+        self.set(self.k, x)
 
     def set(self, index: int, x: bytes) -> None:
-        """Set the value of the leaf at position `index` to `x`, recomputing the tree accordingly.
-        Cost: O(log n)."""
+        """
+        Set the value of the leaf at position `index` to `x`, recomputing the tree accordingly.
+        If `index` == `k`, then a new leaf is added and the tree's capacity is double if needed.'
+
+        Cost: Worst case O(log n) if `index` < `k`. If `index` == `k`, then the cost is amortized
+        O(log n), but O(n) in the worst case.
+        """
+        assert 0 <= index <= self.k
+
+        if index == self.k:
+            # add a new leaf
+            if self.k == self.capacity:
+                self.double_capacity()
+
+            self.k += 1
+
         leaf = self.first_leaf + index
         self.nodes[leaf] = x
         self.fix_up(leaf)
