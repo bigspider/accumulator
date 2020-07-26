@@ -15,7 +15,6 @@ Link to the current writeup [draft]: [Fast hash-based additive accumulators](doc
 Current progress on the writeup:
 - Literature review not fully complete
 - Formal definitions and proofs are missing
-- Second construction is only a sketch; there are currently mistakes.
 
 Code in this repo:
 - [simple_accumulator.py](accumulator/simple_accumulator.py) - implementation of the first construction.
