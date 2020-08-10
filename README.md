@@ -15,12 +15,13 @@ Link to the current writeup [draft]: [Fast hash-based additive accumulators](doc
 Current progress on the writeup:
 - Literature review not fully complete
 - Formal definitions and proofs are missing
-- Second construction is only a sketch; there are currently mistakes.
 
 Code in this repo:
 - [simple_accumulator.py](accumulator/simple_accumulator.py) - implementation of the first construction.
 - [merkle.py](accumulator/merkle.py) - implementation of the flavor of dynamic Merkle trees that is required for the second construction.
 - [smart_accumulator.py](accumulator/smart_accumulator.py) - implementation of the full second construction.
+
+The code needs more testing.
 
 The code focuses on simplicity rather than optimizing the constructions to the maximum extent possible. Some known improvements:
 - in the simple construction, if *n* is odd, then pred(*n*) = *n* - 1, therefore it is redundant to commit to both R_{*n* - 1} and R_{pred(*n*)} in the definition of R_*n*.
