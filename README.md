@@ -11,6 +11,7 @@ The space occupation for the public state is O(log n) for both constructions.
 # Progress
 
 Link to the current writeup [draft]: [Fast hash-based additive accumulators](docs/paper-draft.pdf)
+
 Technical presentation (given to the cryptography group at Aarhus University): https://vimeo.com/464504107
 
 Current progress on the writeup:
