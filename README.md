@@ -8,11 +8,11 @@ These construction are hash-based, and obtain the following running performance 
 
 The space occupation for the public state is O(log n) for both constructions.
 
-# Progress
-
 Link to the current writeup [draft]: [Fast hash-based additive accumulators](docs/paper-draft.pdf)
 
 Technical presentation (given to the cryptography group at Aarhus University): https://vimeo.com/464504107
+
+# Progress
 
 Current progress on the writeup:
 - Literature review not fully complete
