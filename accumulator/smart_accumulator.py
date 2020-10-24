@@ -1,7 +1,7 @@
 from typing import List
 from .event import Event
-from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred, rpred, hook_index, floor_lg
-from .merkle import MerkleTree, merkle_proof_verify
+from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred, rpred, hook_index, floor_lg, ceil_lg
+from .merkle import MerkleTree, merkle_proof_verify, get_proof_size
 
 
 class SmartAccumulator:
@@ -24,10 +24,12 @@ class SmartAccumulator:
         return self.k
 
     def get_state(self, i: int) -> bytes:
-        """Return the accumulator's value R_i, as long as `i` is the largest number divisible by d(i)
+        """
+        Return the accumulator's value R_i, as long as `i` is the largest number divisible by d(i)
         and not greater than k.
         Return NIL if i == 0.
         """
+
         return NIL if i == 0 else self.S.get(zeros(i))
 
     def get_root(self) -> bytes:
@@ -38,6 +40,7 @@ class SmartAccumulator:
         """
         Insert the new element `x` into the accumulator.
         """
+
         M_k_1 = self.S.root
 
         self.k += 1
@@ -102,8 +105,11 @@ class SmartProver:
         return self.prove_from(len(self.accumulator), j)
 
     def prove_from(self, i: int, j: int) -> List[bytes]:
-        """Produce a witness for the j-th element of the accumulator, starting from the root when
-        the i-th element was added."""
+        """
+        Produce a witness for the j-th element of the accumulator, starting from the root when
+        the i-th element was added.
+        """
+
         assert self.initial_k <= j <= i
         assert i in self.elements and i - 1 in self.R and pred(i) in self.R
 
@@ -151,11 +157,12 @@ def smart_verify(Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
         leaf_index = zeros(i_next)
         leaf = w[2]
 
-        merkle_tree_height = floor_lg(i - 1)
-        merkle_proof = w[3:3 + merkle_tree_height]
-        w_rest = w[3 + merkle_tree_height:]
+        merkle_tree_size = 1 + floor_lg(i - 1)
+        merkle_proof_size = get_proof_size(merkle_tree_size, leaf_index)
+        merkle_proof = w[3:3 + merkle_proof_size]
+        w_rest = w[3 + merkle_proof_size:]
 
-        if not merkle_proof_verify(M_prev_root, leaf, leaf_index, merkle_proof):
+        if not merkle_proof_verify(M_prev_root, merkle_tree_size, leaf, leaf_index, merkle_proof):
             print("Merkle proof failed")
             return False
         

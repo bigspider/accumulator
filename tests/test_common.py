@@ -1,4 +1,4 @@
-from accumulator import hook_index, floor_lg, ceil_lg
+from accumulator.common import hook_index, floor_lg, ceil_lg, largest_power_of_2_less_than, highest_divisor_power_of_2
 
 import unittest
 
@@ -52,6 +52,43 @@ class CommonTestSuite(unittest.TestCase):
         self.assertEqual(ceil_lg(15), 4)
         self.assertEqual(ceil_lg(16), 4)
         self.assertEqual(ceil_lg(17), 5)
+
+    def test_highest_divisor_power_of_2(self):
+        self.assertEqual(highest_divisor_power_of_2(0), 0)
+        self.assertEqual(highest_divisor_power_of_2(1), 1)
+        self.assertEqual(highest_divisor_power_of_2(2), 2)
+        self.assertEqual(highest_divisor_power_of_2(3), 1)
+        self.assertEqual(highest_divisor_power_of_2(4), 4)
+        self.assertEqual(highest_divisor_power_of_2(5), 1)
+        self.assertEqual(highest_divisor_power_of_2(6), 2)
+        self.assertEqual(highest_divisor_power_of_2(7), 1)
+        self.assertEqual(highest_divisor_power_of_2(8), 8)
+        self.assertEqual(highest_divisor_power_of_2(9), 1)
+        self.assertEqual(highest_divisor_power_of_2(10), 2)
+        self.assertEqual(highest_divisor_power_of_2(11), 1)
+        self.assertEqual(highest_divisor_power_of_2(12), 4)
+        self.assertEqual(highest_divisor_power_of_2(13), 1)
+        self.assertEqual(highest_divisor_power_of_2(14), 2)
+        self.assertEqual(highest_divisor_power_of_2(15), 1)
+        self.assertEqual(highest_divisor_power_of_2(16), 16)
+
+    def test_largest_power_of_2_less_than(self):
+        self.assertEqual(largest_power_of_2_less_than(2), 1)
+        self.assertEqual(largest_power_of_2_less_than(3), 2)
+        self.assertEqual(largest_power_of_2_less_than(4), 2)
+        self.assertEqual(largest_power_of_2_less_than(5), 4)
+        self.assertEqual(largest_power_of_2_less_than(6), 4)
+        self.assertEqual(largest_power_of_2_less_than(7), 4)
+        self.assertEqual(largest_power_of_2_less_than(8), 4)
+        self.assertEqual(largest_power_of_2_less_than(9), 8)
+        self.assertEqual(largest_power_of_2_less_than(10), 8)
+        self.assertEqual(largest_power_of_2_less_than(11), 8)
+        self.assertEqual(largest_power_of_2_less_than(12), 8)
+        self.assertEqual(largest_power_of_2_less_than(13), 8)
+        self.assertEqual(largest_power_of_2_less_than(14), 8)
+        self.assertEqual(largest_power_of_2_less_than(15), 8)
+        self.assertEqual(largest_power_of_2_less_than(16), 8)
+        self.assertEqual(largest_power_of_2_less_than(17), 16)
 
 
 if __name__ == '__main__':

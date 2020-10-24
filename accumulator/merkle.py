@@ -1,152 +1,211 @@
-from .common import NIL, H
-from typing import List
+from .common import H, NIL, is_power_of_2, ceil_lg, floor_lg, largest_power_of_2_less_than
+from typing import List, Optional
 
-# Helper functions for representing a binary tree in a zero-indexed array
+# root is the only node with parent == None
+# leaves have left == right == None
+class Node:
+    def __init__(self, left, right, parent, value: bytes):
+        self.left = left
+        self.right = right
+        self.parent = parent
+        self.value = value
 
-def parent(n: int) -> int:
-    """Return the index of the parent of the node with a positive index n."""
-    return (n - 1) // 2
+    def recompute_value(self):
+        assert self.left is not None
+        assert self.right is not None
+        self.value = H(self.left.value + self.right.value)
 
-def left_child(n: int) -> int:
-    """Return the left child of a node with non-negative index n."""
-    return 2 * n + 1
+    def sibling(self):
+        if self.parent is None:
+            raise IndexError("The root does not have a sibling.")
 
-def right_child(n: int) -> int:
-    """Return the right child of a node with non-negative index n."""
-    return 2 * n + 2
+        if self.parent.left == self:
+            return self.parent.right
+        elif self.parent.right == self:
+            return self.parent.left
+        else:
+            raise IndexError("Invalid state: not a child of his parent.")
+
+
+def make_tree(leaves: List[Node], begin: int, size: int) -> Node:
+    """Given a list of nodes, builds the left-complete Merkle tree on top of it.
+    The nodes in `leaves` are modified by setting their `parent` field appropriately.
+    It returns the root of the newly built tree.
+    """
+
+    if size == 1:
+        return leaves[begin]
+
+    lchild_size = largest_power_of_2_less_than(size)
+
+    lchild = make_tree(leaves, begin, lchild_size)
+    rchild = make_tree(leaves, begin + lchild_size, size - lchild_size)
+    root = Node(lchild, rchild, None, None)
+    root.recompute_value()
+    lchild.parent = rchild.parent = root
+    return root
+
 
 class MerkleTree:
     """
-    Maintains a complete Merkle tree, it is possible to insert leaves or change existing leaves; it
-    is not possible to remove leaves. The tree is always kept at the minimum capacity that is a
-    power of 2 an is enough to contain all the leaves; for example, if 13 leaves have been added,
-    16 nodes are reserved for leaves; leaves for missing values contain NIL. The value of each
-    internal node is the hash of the values of the left child, concatenated to the value of the
-    right child.
+    Maintains a dynamic vector of values and the Merkle tree built on top of it. The elements of the vector are stored
+    as the leaves of a binary tree. It is possible to add a new element to the vector, or change an existing element;
+    the hashes in the Merkle tree will be recomputed after each operation in O(log n) time, for a vector with n
+    elements.
+    The value of each internal node is the hash of the values of the left child, concatenated to the value of the right
+    child.
+
+    The binary tree has the following properties (assuming the vector contains n leaves):
+    - There are always n - 1 internal nodes; all the internal nodes have exactly two children.
+    - If a subtree has n > 1 leaves, then the left subchild is a complete subtree with p leaves, where p is the largest
+      power of 2 smaller than n.
     """
     def __init__(self, elements: List[bytes] = []):
-        # TODO: add ability to create a tree with an initial set of elements
-
-        self.k = len(elements)
-
-        # set current capacity to the smallest power of 2 that is at least len(elements)
-        self.capacity = 1
-        while self.capacity < self.k:
-            self.capacity = self.capacity * 2
-
-        self.nodes = [NIL] * (2 * self.capacity - 1)
-        for i in range(len(elements)):
-            self.nodes[self.first_leaf + i] = elements[i]
-        self.recompute_internal_nodes() 
+        if elements:
+            self.leaves = [Node(None, None, None, el) for el in elements]
+            self.root_node = make_tree(self.leaves, 0, len(elements))
+            self.depth = ceil_lg(len(elements))
+        else:
+            self.leaves = []
+            self.root_node = None
+            self.depth = None
 
     def __len__(self) -> int:
         """Return the total number of leaves in the tree."""
-        return self.k
+        return len(self.leaves)
 
     @property
-    def first_leaf(self) -> int:
-        """Return the value of the first node for a leaf in the array."""
-        return self.capacity - 1
+    def root(self) -> bytes:
+        """Return the Merkle root, or None if the tree is empty."""
+        return NIL if self.root_node is None else self.root_node.value
 
-    def fix_node(self, i: int) -> None:
-        """Set the value of the node with index `i` to the hash of the concatenation of the
-        two children of i."""
-        self.nodes[i] = H(self.nodes[left_child(i)] + self.nodes[right_child(i)])
-
-    def fix_up(self, i: int) -> None:
-        """For each node in the ancestry of `i` (not including `i`), execute fix_node."""
-        while i > 0:
-            i = parent(i)
-            self.fix_node(i)
-
-    def recompute_internal_nodes(self) -> None:
-        """Recompute all the internal nodes. Cost: O(n)."""
-        for i in range(self.first_leaf - 1, -1, -1):
-            self.fix_node(i)
-
-    def double_capacity(self) -> None:
-        """Doubles the capacity of the tree, moving the leaves down one level and recomputing the
-        whole tree. Cost: O(n)."""
-        initial_capacity = self.capacity
-        initial_first_leaf = self.first_leaf
-        self.capacity *= 2
-
-        self.nodes += [NIL] * (2 * initial_capacity)
-        for j in range(initial_capacity):
-            self.nodes[self.first_leaf + j] = self.nodes[initial_first_leaf + j]
-
-        self.recompute_internal_nodes()
+    def copy(self):
+        """Return an identical copy of this Merkle tree."""
+        return MerkleTree([leaf.value for leaf in self.leaves])
 
     def add(self, x: bytes) -> None:
-        """Add an element as new leaf, and recompute the tree accordingly. Cost O(log n) amortized;
-        Cost is O(n) when the capacity needs to be doubled."""
-        self.set(self.k, x)
+        """Add an element as new leaf, and recompute the tree accordingly. Cost O(log n)."""
+
+        new_leaf = Node(None, None, None, x)
+        self.leaves.append(new_leaf)
+        if len(self.leaves) == 1:
+            self.root_node = new_leaf
+            self.depth = 0
+            return
+
+        # add a new leaf
+        if self.depth == 0:
+            ltree_size = 0
+        else:
+            ltree_size = 1 << (self.depth - 1) # number of leaves of the left subtree of cur_root
+
+        cur_root = self.root_node
+        cur_root_size = len(self.leaves) - 1
+
+        while not is_power_of_2(cur_root_size):
+            cur_root = cur_root.right
+            cur_root_size -= ltree_size
+            ltree_size /= 2
+
+        new_node = Node(cur_root, new_leaf, cur_root.parent, None) # node value will be computed later
+        if cur_root.parent is None:
+            # replacing the root
+            self.depth += 1
+            self.root_node = new_node
+        else:
+            assert cur_root.parent.right == cur_root
+            cur_root.parent.right = new_node
+        cur_root.parent = new_node
+        new_leaf.parent = new_node
+
+        self.fix_up(new_node)
 
     def set(self, index: int, x: bytes) -> None:
         """
         Set the value of the leaf at position `index` to `x`, recomputing the tree accordingly.
-        If `index` == `k`, then a new leaf is added and the tree's capacity is double if needed.'
+        If `index` equals the current number of leaves, then it is equivalent to `add(x)`.
 
-        Cost: Worst case O(log n) if `index` < `k`. If `index` == `k`, then the cost is amortized
-        O(log n), but O(n) in the worst case.
+        Cost: Worst case O(log n).
         """
-        assert 0 <= index <= self.k
+        assert 0 <= index <= len(self.leaves)
 
-        if index == self.k:
-            # add a new leaf
-            if self.k == self.capacity:
-                self.double_capacity()
+        if index == len(self.leaves):
+            self.add(x)
+        else:
+            self.leaves[index].value = x
+            self.fix_up(self.leaves[index].parent)
 
-            self.k += 1
-
-        leaf = self.first_leaf + index
-        self.nodes[leaf] = x
-        self.fix_up(leaf)
+    def fix_up(self, node: Node):
+        while node is not None:
+            node.recompute_value()
+            node = node.parent
 
     def get(self, i: int) -> bytes:
-        """Return the value of the leaf with index `i`, where 0 <= i < capacity."""
-        return self.nodes[self.first_leaf + i]
-
-    def copy(self):
-        """Return an identical copy of this Merkle tree."""
-        result = MerkleTree()
-        result.k = self.k
-        result.capacity = self.capacity
-        result.nodes = self.nodes.copy()
-        return result
-
-    @property
-    def root(self) -> bytes:
-        """Return the Merkle root."""
-        return self.nodes[0]
+        """Return the value of the leaf with index `i`, where 0 <= i < len(self)."""
+        return self.leaves[i].value
 
     def prove_leaf(self, index: int) -> List[bytes]:
-        """Produce a proof of membership for the leaf with index `i`, where 0 <= i < capacity."""
-        i = self.first_leaf + index
+        """Produce a proof of membership for the leaf with index `i`, where 0 <= i < len(self)."""
+        node = self.leaves[index]
         proof = []
-        while i > 0:
-            if index % 2 == 0:
-                sibling = i + 1
-            else:
-                sibling = i - 1
-            proof.append(self.nodes[sibling])
+        while node.parent is not None:
+            sibling = node.sibling()
+            assert sibling is not None
 
-            i = parent(i)
-            index = index // 2
+            proof.append(sibling.value)
+
+            node = node.parent
 
         return proof
 
 
-def merkle_proof_verify(root: bytes, element: bytes, index: int, proof: List[bytes]) -> bool:
+def get_directions(size: int, index: int) -> List[bool]:
+    """
+    Returns an array of booleans indicating the directions of tree edges in the path from the root to the node with
+    the given index in a Merkle tree of the given size.
+    """
+
+    assert size > 0
+    assert 0 <= index < size
+
+    directions = []
+    if size == 1:
+        return directions
+
+    while size > 1:
+        depth = ceil_lg(size)
+        mask = 1 << (depth - 1) # bitmask of the direction from the current node; also the number of leaves of the left subtree
+        right_child = index & mask != 0
+        directions.append(right_child)
+
+        if right_child:
+            size -= mask
+            index -= mask
+        else:
+            size = mask
+        mask //= 2
+
+    return directions
+
+
+def get_proof_size(size: int, index: int):
+    return len(get_directions(size, index))
+
+
+def merkle_proof_verify(root: bytes, size: int, element: bytes, index: int, proof: List[bytes]) -> bool:
     """Verify that `proof` is a valid membership proof for the statement that the leaf with
     index `index` is equal to `element` in the tree with the given Merkle `root`."""
     cur_hash = element
+    directions = get_directions(size, index)
+
+    if len(proof) != len(directions):
+        return False  # wrong proof size
+
     for h in proof:
-        if index % 2 == 0:
+        if directions.pop() == False:
             cur_hash = H(cur_hash + h)
         else:
             cur_hash = H(h + cur_hash)
 
-        index = index // 2
-
     return cur_hash == root
+

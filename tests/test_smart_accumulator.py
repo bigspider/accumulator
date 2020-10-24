@@ -61,7 +61,7 @@ class SmartAccumulatorTestSuite(unittest.TestCase):
             self.assertEqual(t.root, roots[i])
 
     def test_prove_from_verify_trivial(self):
-        # Test with a proof for the a past elements, but starting from its own root
+        # Test with a proof for a past elements, but starting from its own root
         acc = SmartAccumulator()
         prover = SmartProver(acc)
 

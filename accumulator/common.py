@@ -30,6 +30,14 @@ def is_power_of_2(n: int) -> bool:
     return n & (n - 1) == 0
 
 
+def largest_power_of_2_less_than(n: int) -> int:
+    assert n > 1
+    if is_power_of_2(n):
+        return n // 2
+    else:
+        return 1 << floor_lg(n)
+
+
 # The number of trailing zeros in the binary representation of n
 # also equal to log_2(d(n))
 def zeros(n: int) -> int:
@@ -49,7 +57,7 @@ def pred(n: int) -> int:
     return n - highest_divisor_power_of_2(n)
 
 def rpred(n: int, m: int) -> int:
-    """For integers n > m > 0, return the largest number not smallr than m thayt can be obtained by
+    """For integers n > m > 0, return the largest number not smaller than m that can be obtained by
     progressively zero-ing the least significant 1 digit in the binary representation of n."""
     while pred(n) >= m:
         n = pred(n)
