@@ -1,9 +1,10 @@
 from typing import Union, List
 from .event import Event
 from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred
+from .factory import AbstractAccumulatorFactory, AbstractAccumulatorManager, AbstractProver, AbstractVerifier
 
 
-class SimpleAccumulator:
+class SimpleAccumulator(AbstractAccumulatorManager):
     """
     Maintains the public state of the accumulator.
     Allows to add elements that should be in the domain of the hash function H, and can add new
@@ -41,9 +42,7 @@ class SimpleAccumulator:
         return self.get_state(self.k)
 
     def add(self, x: bytes) -> bytes:
-        """
-        Insert the new element `x` into the accumulator.
-        """
+        """Insert the new element `x` into the accumulator."""
         self.increase_counter()
 
         prev_state = self.get_state(self.k - 1)
@@ -58,7 +57,7 @@ class SimpleAccumulator:
         return result
 
 
-class SimpleProver:
+class SimpleProver(AbstractProver):
     """
     Listens to updates from a `SimpleAccumulator`, and stores the necessary information to create
     witnesses for any element added to the accumulator after this instance is created.
@@ -95,30 +94,38 @@ class SimpleProver:
         return w
 
 
+class SimpleVerifier(AbstractVerifier):
+    # returns True if `w` is a valid proof for the statement that the element at position j is x, starting from element i
+    # that has accumulator's root Ri
+    def verify(self, Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
+        """
+        Verify that `w` is a valid proof that the the `j`-th element added to the accumulator is `x`,
+        given that the value of the accumulator after the `i`-th element was added is `Ri`.
+        """
+        assert j <= i
+        if len(w) < 3:
+            print("Witness too short")
+            return False
 
-# returns True if `w` is a valid proof for the statement that the element at position j is x, starting from element i
-# that has accumulator's root Ri
-def simple_verify(Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
-    """
-    Verify that `w` is a valid proof that the the `j`-th element added to the accumulator is `x`,
-    given that the value of the accumulator after the `i`-th element was added is `Ri`.
-    """
-    assert j <= i
-    if len(w) < 3:
-        print("Witness too short")
-        return False
+        x_i, R_prev, R_pred = w[0:3]
 
-    x_i, R_prev, R_pred = w[0:3]
+        # verify that H(x_i||R_prev||R_pred) == Ri
+        if H(x_i + R_prev + R_pred) != Ri:
+            print("Hash did not match")
+            return False
 
-    # verify that H(x_i||R_prev||R_pred) == Ri
-    if H(x_i + R_prev + R_pred) != Ri:
-        print("Hash did not match")
-        return False
+        if i == j:
+            return x_i == x
+        else:  # i > j
+            if pred(i) >= j:
+                return self.verify(R_pred, pred(i), j, w[3:], x)
+            else:
+                return self.verify(R_prev, i - 1, j, w[3:], x)
 
-    if i == j:
-        return x_i == x
-    else:  # i > j
-        if pred(i) >= j:
-            return simple_verify(R_pred, pred(i), j, w[3:], x)
-        else:
-            return simple_verify(R_prev, i - 1, j, w[3:], x)
+
+class SimpleAccumulatorFactory(AbstractAccumulatorFactory):
+    def create_accumulator(self):
+        accumulator_manager = SimpleAccumulator()
+        prover = SimpleProver(accumulator_manager)
+        verifier = SimpleVerifier()
+        return accumulator_manager, prover, verifier

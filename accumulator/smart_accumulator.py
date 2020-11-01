@@ -1,10 +1,11 @@
 from typing import List
 from .event import Event
+from .factory import AbstractAccumulatorFactory, AbstractAccumulatorManager, AbstractProver, AbstractVerifier
 from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred, rpred, hook_index, floor_lg, ceil_lg
 from .merkle import MerkleTree, merkle_proof_verify, get_proof_size
 
 
-class SmartAccumulator:
+class SmartAccumulator(AbstractAccumulatorManager):
     """
     Maintains the public state of the accumulator.
     Allows to add elements that should be in the domain of the hash function H, and can add new
@@ -53,7 +54,7 @@ class SmartAccumulator:
         return result
 
 
-class SmartProver:
+class SmartProver(AbstractProver):
     """
     Listens to updates from an `Accumulator`, and stores the necessary information to create
     witnesses for any element added to the accumulator after this instance is created.
@@ -129,41 +130,48 @@ class SmartProver:
         return w
 
 
+class SmartVerifier(AbstractVerifier):
+    # returns True if `w` is a valid proof for the statement that the element at position j is x, starting from element i
+    # that has accumulator root Ri
+    def verify(self, Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
+        """
+        Verify that `w` is a valid proof that the the `j`-th element added to the accumulator is `x`,
+        given that the value of the accumulator after the `i`-th element was added is `Ri`.
+        """
 
-# returns True if `w` is a valid proof for the statement that the element at position j is x, starting from element i
-# that has accumulator root Ri
-def smart_verify(Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
-    """
-    Verify that `w` is a valid proof that the the `j`-th element added to the accumulator is `x`,
-    given that the value of the accumulator after the `i`-th element was added is `Ri`.
-    """
-
-    assert 1 <= j <= i
-    if len(w) < 2:
-        print("Witness too short")
-        return False
-
-    x_i, M_prev_root = w[0:2]
-
-    # verify that H(x_i||M_prev_root) == Ri
-    if H(x_i + M_prev_root) != Ri:
-        print("Hash did not match")
-        return False
-
-    if i == j:
-        return x_i == x
-    else:  # i > j
-        i_next = rpred(i - 1, j)
-        leaf_index = zeros(i_next)
-        leaf = w[2]
-
-        merkle_tree_size = 1 + floor_lg(i - 1)
-        merkle_proof_size = get_proof_size(merkle_tree_size, leaf_index)
-        merkle_proof = w[3:3 + merkle_proof_size]
-        w_rest = w[3 + merkle_proof_size:]
-
-        if not merkle_proof_verify(M_prev_root, merkle_tree_size, leaf, leaf_index, merkle_proof):
-            print("Merkle proof failed")
+        assert 1 <= j <= i
+        if len(w) < 2:
+            print("Witness too short")
             return False
-        
-        return smart_verify(leaf, i_next, j, w_rest, x)
+
+        x_i, M_prev_root = w[0:2]
+
+        # verify that H(x_i||M_prev_root) == Ri
+        if H(x_i + M_prev_root) != Ri:
+            print("Hash did not match")
+            return False
+
+        if i == j:
+            return x_i == x
+        else:  # i > j
+            i_next = rpred(i - 1, j)
+            leaf_index = zeros(i_next)
+            leaf = w[2]
+
+            merkle_tree_size = 1 + floor_lg(i - 1)
+            merkle_proof_size = get_proof_size(merkle_tree_size, leaf_index)
+            merkle_proof = w[3:3 + merkle_proof_size]
+            w_rest = w[3 + merkle_proof_size:]
+
+            if not merkle_proof_verify(M_prev_root, merkle_tree_size, leaf, leaf_index, merkle_proof):
+                print("Merkle proof failed")
+                return False
+            
+            return self.verify(leaf, i_next, j, w_rest, x)
+
+class SmartAccumulatorFactory(AbstractAccumulatorFactory):
+    def create_accumulator(self):
+        accumulator_manager = SmartAccumulator()
+        prover = SmartProver(accumulator_manager)
+        verifier = SmartVerifier()
+        return accumulator_manager, prover, verifier
