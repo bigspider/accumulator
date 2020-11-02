@@ -3,17 +3,14 @@ from .event import Event
 from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred
 from .factory import AbstractAccumulatorFactory, AbstractAccumulatorManager, AbstractProver, AbstractVerifier
 
+# This module implements the simplest variant of the accumulator.
+# Each new accumulator value R_k is defined as:
+#   R_k = H(x_k || R_(k - 1) || R_(pred(k)))
+
+# Cost of update: O(1)
+# Proof size: O((log n)^2)
 
 class SimpleAccumulator(AbstractAccumulatorManager):
-    """
-    Maintains the public state of the accumulator.
-    Allows to add elements that should be in the domain of the hash function H, and can add new
-    elements, updating the state of the accumulator accordingly.
-    Does not hold enough information to produce proofs; instead, whenever a new element is added,
-    notifies all listeners of `element_added` with the new value of the counter, the new element
-    and the new root hash of the accumulator.
-    """
-
     def __init__(self):
         self.k = 0
         self.S = [NIL]
@@ -95,8 +92,6 @@ class SimpleProver(AbstractProver):
 
 
 class SimpleVerifier(AbstractVerifier):
-    # returns True if `w` is a valid proof for the statement that the element at position j is x, starting from element i
-    # that has accumulator's root Ri
     def verify(self, Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
         """
         Verify that `w` is a valid proof that the the `j`-th element added to the accumulator is `x`,

@@ -2,6 +2,14 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple
 
 class AbstractAccumulatorManager(ABC):
+    """
+    An accumulator manager maintains the public state of the accumulator.
+    Allows to add elements that should be in the domain of the hash function H, updating the state of the accumulator
+    accordingly.
+    Does not hold enough information to produce proofs; instead, whenever a new element is added, it should signal
+    to listeners that an element was added, informing them of the new value of the counter, the value of the new
+    element and the new root hash of the accumulator.
+    """
     @abstractmethod
     def add(self, element: bytes):
         pass
@@ -41,4 +49,5 @@ class AbstractVerifier(ABC):
 class AbstractAccumulatorFactory(ABC):
     @abstractmethod
     def create_accumulator(self, initial_elememnts: List[bytes] = []) -> Tuple[AbstractAccumulatorManager, AbstractProver, AbstractVerifier]:
+        """Creates an accumulator manager, and the corresponding prover and verifier."""
         pass

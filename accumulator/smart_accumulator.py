@@ -4,17 +4,15 @@ from .factory import AbstractAccumulatorFactory, AbstractAccumulatorManager, Abs
 from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred, rpred, hook_index, floor_lg, ceil_lg
 from .merkle import MerkleTree, merkle_proof_verify, get_proof_size
 
+# This module implements the second construction of the accumulator.
+# Each new accumulator value R_k is defined as:
+#   R_k = H(x_k || M_(k - 1))
+# where M_i is the Merkle tree of all the state variables.
+
+# Cost of update: O(log log n)
+# Proof size: O(log n log log n)
 
 class SmartAccumulator(AbstractAccumulatorManager):
-    """
-    Maintains the public state of the accumulator.
-    Allows to add elements that should be in the domain of the hash function H, and can add new
-    elements, updating the state of the accumulator accordingly.
-    Does not hold enough information to produce proofs; instead, whenever a new element is added,
-    notifies all listeners of `element_added` with the new value of the counter, the new element
-    and the new root hash of the accumulator.
-    """
-
     def __init__(self):
         self.k = 0
         self.S = MerkleTree()
@@ -56,7 +54,7 @@ class SmartAccumulator(AbstractAccumulatorManager):
 
 class SmartProver(AbstractProver):
     """
-    Listens to updates from an `Accumulator`, and stores the necessary information to create
+    Listens to updates from a `SmartAccumulator`, and stores the necessary information to create
     witnesses for any element added to the accumulator after this instance is created.
     """
     def __init__(self, accumulator: SmartAccumulator):
@@ -131,8 +129,6 @@ class SmartProver(AbstractProver):
 
 
 class SmartVerifier(AbstractVerifier):
-    # returns True if `w` is a valid proof for the statement that the element at position j is x, starting from element i
-    # that has accumulator root Ri
     def verify(self, Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
         """
         Verify that `w` is a valid proof that the the `j`-th element added to the accumulator is `x`,
