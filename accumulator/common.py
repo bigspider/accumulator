@@ -74,6 +74,28 @@ def hook_index(n: int, t: int) -> int:
     else:
         return (r - 1) & ~(d - 1) # zero the last t bits of r - 1
 
+
+# from https://stackoverflow.com/questions/15978781/how-to-find-integer-nth-roots
+def iroot(k, n):
+    hi = 1
+    while pow(hi, k) < n:
+        hi *= 2
+    lo = hi // 2
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        midToK = pow(mid, k)
+        if midToK < n:
+            lo = mid
+        elif n < midToK:
+            hi = mid
+        else:
+            return mid
+    if pow(hi, k) == n:
+        return hi
+    else:
+        return lo
+
+
 def H(x: Union[str, bytes]) -> bytes:
     """If x an array of bytes, return the sha256 digest of it.
     If x if a string, convert it to bytes using utf8 encoding first, then return the digest."""
