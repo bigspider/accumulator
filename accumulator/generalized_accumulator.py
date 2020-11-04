@@ -7,8 +7,10 @@ from .factory import AbstractAccumulatorFactory, AbstractAccumulatorManager, Abs
 # This module implements the generalized, parameterized variant of the simple accumulator.
 # Each new accumulator value R_k is defined as:
 #   R_k = H(x_k || M_k)
-# where M_k is the Merkle root of the vector of a number of accumulators for representative indices
-# that must include R_{k - 1}.
+# where M_k is the Merkle root of the vector of a number of accumulators for representative indices.
+# The vector of representative elements is sorted by decreasing index, and it must start with R_{k - 1}.
+# When generating or verifying a proof for a target element x_j, the leaf of the Merkle tree that is included in the
+# proof (or revealed) is the one corresponding to the element with the smallest index which is at least j.
 
 class GeneralizedAccumulator(AbstractAccumulatorManager):
     def __init__(self, get_representatives_fn: Callable[[int], List[int]]):

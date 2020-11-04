@@ -77,6 +77,7 @@ def hook_index(n: int, t: int) -> int:
 
 # from https://stackoverflow.com/questions/15978781/how-to-find-integer-nth-roots
 def iroot(k, n):
+    """Computes floor(n^(1/k)), that is, the k-th root of n, rounded down to the nearest integer."""
     hi = 1
     while pow(hi, k) < n:
         hi *= 2

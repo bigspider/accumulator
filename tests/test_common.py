@@ -1,4 +1,11 @@
-from accumulator.common import hook_index, floor_lg, ceil_lg, largest_power_of_2_less_than, highest_divisor_power_of_2
+from accumulator.common import (
+    hook_index,
+    floor_lg,
+    ceil_lg,
+    largest_power_of_2_less_than,
+    highest_divisor_power_of_2,
+    iroot,
+)
 
 import unittest
 
@@ -89,6 +96,23 @@ class CommonTestSuite(unittest.TestCase):
         self.assertEqual(largest_power_of_2_less_than(15), 8)
         self.assertEqual(largest_power_of_2_less_than(16), 8)
         self.assertEqual(largest_power_of_2_less_than(17), 16)
+
+    def test_iroot(self):
+        for i in range(0, 10):
+            self.assertEqual(iroot(1, i), i)
+
+        self.assertEqual(iroot(2, 0), 0)
+        self.assertEqual(iroot(2, 1), 1)
+        self.assertEqual(iroot(2, 2), 1)
+        self.assertEqual(iroot(2, 3), 1)
+        self.assertEqual(iroot(2, 4), 2)
+        self.assertEqual(iroot(2, 5), 2)
+        self.assertEqual(iroot(2, 8), 2)
+        self.assertEqual(iroot(2, 9), 3)
+        self.assertEqual(iroot(2, 10), 3)
+        self.assertEqual(iroot(3, 63), 3)
+        self.assertEqual(iroot(3, 64), 4)
+        self.assertEqual(iroot(3, 65), 4)
 
 
 if __name__ == '__main__':
