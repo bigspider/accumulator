@@ -1,5 +1,5 @@
 import unittest
-from accumulator.generalized_accumulator import get_representatives, GeneralizedAccumulatorFactory
+from accumulator.multipointer_accumulator import get_representatives, MultipointerAccumulatorFactory
 from accumulator.common import pred
 
 from .base import BaseAccumulatorTestSuite
@@ -37,7 +37,7 @@ class GeneralizedAccumulatorTestSuite(BaseAccumulatorTestSuite, unittest.TestCas
 
 
     def get_instances(self):
-        factory = GeneralizedAccumulatorFactory()
+        factory = MultipointerAccumulatorFactory()
         return factory.create_accumulator(2)
 
 

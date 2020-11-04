@@ -48,6 +48,6 @@ class AbstractVerifier(ABC):
 
 class AbstractAccumulatorFactory(ABC):
     @abstractmethod
-    def create_accumulator(self, initial_elememnts: List[bytes] = []) -> Tuple[AbstractAccumulatorManager, AbstractProver, AbstractVerifier]:
+    def create_accumulator(self, initial_elements: List[bytes] = []) -> Tuple[AbstractAccumulatorManager, AbstractProver, AbstractVerifier]:
         """Creates an accumulator manager, and the corresponding prover and verifier."""
         pass

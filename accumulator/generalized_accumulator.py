@@ -1,39 +1,21 @@
-from typing import Union, List
+from typing import Union, List, Callable
 from .event import Event
+from .merkle import MerkleTree, get_proof_size, merkle_proof_verify
 from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred, ceil_lg, iroot
 from .factory import AbstractAccumulatorFactory, AbstractAccumulatorManager, AbstractProver, AbstractVerifier
 
 # This module implements the generalized, parameterized variant of the simple accumulator.
 # Each new accumulator value R_k is defined as:
-#   R_k = H(x_k || R_1 || R_{a_1} || .. || R_{a_p})
-# for p opportunely defined indices that are parte of the special set. TODO: precise definition
-
-# Cost of update: O(p)
-# Proof size: O((log n)^(1 + 1/p))
-
-def get_representatives(k: int, p: int):
-    if k == 1:
-        return []
-
-    # if k is even, we also add k - 1
-    result = [k - 1] if k % 2 == 0 else []
-
-    d = iroot(ceil_lg(k), p)
-    t = k
-    for i in range(p):
-        t = pred(t)
-        if t == 0:
-            break
-        result.append(t)
-    return result
-
+#   R_k = H(x_k || M_k)
+# where M_k is the Merkle root of the vector of a number of accumulators for representative indices
+# that must include R_{k - 1}.
 
 class GeneralizedAccumulator(AbstractAccumulatorManager):
-    def __init__(self, p: int):
+    def __init__(self, get_representatives_fn: Callable[[int], List[int]]):
         self.k = 0
         self.S = [NIL]
         self.element_added = Event()
-        self.p = p
+        self.get_representatives = get_representatives_fn
 
     def __len__(self):
         """Returns `k`, the total number of elements in this accumulator."""
@@ -61,10 +43,10 @@ class GeneralizedAccumulator(AbstractAccumulatorManager):
         """Insert the new element `x` into the accumulator."""
         self.increase_counter()
 
-        prev_states = [self.get_state(x) for x in get_representatives(self.k, self.p)]
+        prev_states = [self.get_state(x) for x in self.get_representatives(self.k)]
+        mt = MerkleTree(prev_states)
 
-        data = x + b''.join(prev_states)
-        result = H(data)
+        result = H(x + mt.root)
 
         self.S[zeros(self.k)] = result
 
@@ -77,10 +59,10 @@ class GeneralizedProver(AbstractProver):
     Listens to updates from a `GeneralizedAccumulator`, and stores the necessary information to create
     witnesses for any element added to the accumulator after this instance is created.
     """
-    def __init__(self, p: int, accumulator: GeneralizedAccumulator):
+    def __init__(self, get_representatives_fn: Callable[[int], List[int]], accumulator: GeneralizedAccumulator):
         self.elements = dict([(0, NIL)])
         self.R = dict([(0, NIL)])
-        self.p = p
+        self.get_representatives = get_representatives_fn
         self.accumulator = accumulator
         accumulator.element_added += self.element_added
 
@@ -98,22 +80,30 @@ class GeneralizedProver(AbstractProver):
         """Produce a witness for the j-th element of the accumulator, starting from the root when
         the i-th element was added."""
         assert j <= i
-        assert i in self.elements and i - 1 in self.R and pred(i) in self.R
 
-        prev_states = [self.R[x] for x in get_representatives(i, self.p)]
-        w = [self.elements[i], *prev_states]
+        representatives = self.get_representatives(i)
 
-        representatives = get_representatives(i, self.p)
+        assert all(t in self.elements for t in representatives)
+
+        prev_states = [self.R[x] for x in representatives]
+        mt = MerkleTree(prev_states)
+
+        w = [self.elements[i], mt.root]
+
         if i > j:
             next_i = min(rep for rep in representatives if rep >= j)
+            leaf_index = next(l for l, val in enumerate(representatives) if val == next_i)
+            w.append(mt.get(leaf_index))
+            w += mt.prove_leaf(leaf_index)
+
             w += self.prove_from(next_i, j)
 
         return w
 
 
 class GeneralizedVerifier(AbstractVerifier):
-    def __init__(self, p: int):
-        self.p = p
+    def __init__(self, get_representatives_fn: Callable[[int], List[int]]):
+        self.get_representatives = get_representatives_fn
 
     def verify(self, Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
         """
@@ -122,17 +112,16 @@ class GeneralizedVerifier(AbstractVerifier):
         """
         assert j <= i
 
-        representatives = get_representatives(i, self.p)
+        representatives = self.get_representatives(i)
 
-        if len(w) < 1 + len(representatives):
+        if len(w) < 2:
             print("Witness too short")
             return False
 
-        x_i = w[0]
-        R_repr = w[1:1 + len(representatives)]
+        x_i, mt_root = w[0:2]
 
         # verify that the hash of x_i concatenated to all the representatives equals Ri
-        if H(x_i + b''.join(R_repr)) != Ri:
+        if H(x_i + mt_root) != Ri:
             print("Hash did not match")
             return False
 
@@ -140,19 +129,28 @@ class GeneralizedVerifier(AbstractVerifier):
             return x_i == x
         else:  # i > j
             # find the index of the smallest representative that is >= j 
+            representatives = self.get_representatives(i)
             next_repr_index = 0
             while next_repr_index < len(representatives) - 1 and representatives[next_repr_index+1] >= j:
                 next_repr_index += 1
 
-            next_R_i = R_repr[next_repr_index]
-            next_i = representatives[next_repr_index]
+            merkle_tree_size = len(representatives)
+            merkle_proof_size = get_proof_size(merkle_tree_size, next_repr_index)
 
-            return self.verify(next_R_i, next_i, j, w[1 + len(representatives):], x)
+            leaf = w[2]
+            merkle_proof = w[3:3 + merkle_proof_size]
+            w_rest = w[3 + merkle_proof_size:]
+
+            if not merkle_proof_verify(mt_root, merkle_tree_size, leaf, next_repr_index, merkle_proof):
+                print("Merkle proof failed")
+                return False
+
+            return self.verify(leaf, representatives[next_repr_index], j, w_rest, x)
 
 
 class GeneralizedAccumulatorFactory(AbstractAccumulatorFactory):
-    def create_accumulator(self, p: int):
-        accumulator_manager = GeneralizedAccumulator(p)
-        prover = GeneralizedProver(p, accumulator_manager)
-        verifier = GeneralizedVerifier(p)
+    def create_accumulator(self, get_representatives_fn: Callable[[int], List[int]],):
+        accumulator_manager = GeneralizedAccumulator(get_representatives_fn)
+        prover = GeneralizedProver(get_representatives_fn, accumulator_manager)
+        verifier = GeneralizedVerifier(get_representatives_fn)
         return accumulator_manager, prover, verifier
