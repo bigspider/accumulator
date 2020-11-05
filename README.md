@@ -24,7 +24,7 @@ Code in this repo:
 - [smart_accumulator.py](accumulator/smart_accumulator.py) - implementation of the full second construction.
 
 Not yet described in the paper draft:
-- [multipointer_accumulator.py](accumulator/multipointer_accumulator.py) - a generalization of the first construction. For any fixed integer p >= 1, it achieves insertion cost O_p(1) and proof size O_p((log n) ^ (1 + 1/p)).
+- [multipointer_accumulator.py](accumulator/multipointer_accumulator.py) - a generalization of the first construction. For any fixed integer p >= 1, it achieves insertion cost O_p(1) and proof size O_p((log n) ^ (1 + 1/p)). With p = 1, it reduces to the simple_accumulator.
 - [multipointer_loglog.py](accumulator/multipointer_loglog.py) - a modification of the multipointer accumulator using a non-constant p; achieves insertion cost O(log log n) and proof size O(log n log log n log log log n) (true story)
 
 Open problem:
