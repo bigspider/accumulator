@@ -21,7 +21,7 @@ def get_representatives(k: int):
 
     t = k
     c = 1
-    while t > 0:
+    while pred(t) > 0:
         t = pred(t)
         if is_power_of_2(c):
             result.append(t)
