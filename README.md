@@ -23,9 +23,15 @@ Code in this repo:
 - [merkle.py](accumulator/merkle.py) - implementation of the flavor of dynamic Merkle trees that is required for the second construction.
 - [smart_accumulator.py](accumulator/smart_accumulator.py) - implementation of the full second construction.
 
+Not yet described in the paper draft:
+- [multipointer_accumulator.py](accumulator/multipointer_accumulator.py) - a generalization of the first construction. For any fixed integer p >= 1, it achieves insertion cost O_p(1) and proof size O_p((log n) ^ (1 + 1/p)).
+- [multipointer_loglog.py](accumulator/multipointer_loglog.py) - a modification of the multipointer accumulator using a non-constant p; achieves insertion cost O(log log n) and proof size O(log n log log n log log log n) (true story)
+
+Open problem:
+- It might be possible to modify the multipointer_loglog construction to have strictly better insertion cost than log log n (while still not constant). That would give an interesting solution in between the simple_accumulator and the smart_accumulator!
+
 The code needs more testing.
 
 The code focuses on simplicity rather than optimizing the constructions to the maximum extent possible. Some known improvements:
 - in the simple construction, if *n* is odd, then pred(*n*) = *n* - 1, therefore it is redundant to commit to both R_{*n* - 1} and R_{pred(*n*)} in the definition of R_*n*.
-- The Merkle trees are always complete binary trees with 2^*k* leaves when the height is *h* (where unused leaves contain NIL); on average, a constant could be saved in the proof size by not storing the subtrees whose leaves are all NIL. The insertion time is amortized O(log(*n*)) for a tree with *n* leaves, while it is possible to obtain the same in the worst case.
 - The SmartProver is not yet very smart; it computes the full Merkle trees on demand rather than saving the necessary precomputed information. Probably not an issue for most applications, though (and it allows to keep the code simpler).
