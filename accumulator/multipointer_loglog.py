@@ -9,7 +9,7 @@ from .generalized_accumulator import (
 # Implementation of the generalized accumulator with about log log n "evenly spaced" back-pointers.
 
 # Cost of update: ~2 log log n
-# Proof size: O(log n (log log n)^2)
+# Proof size: O(log n log log n log log log n)
 
 
 def get_representatives(k: int):
