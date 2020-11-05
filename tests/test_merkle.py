@@ -1,10 +1,11 @@
-from accumulator import H, NIL
-from accumulator.merkle import get_directions, Node, MerkleTree, merkle_proof_verify
+from accumulator.common import H, NIL
+from accumulator.merkle import get_directions, MerkleTree, merkle_proof_verify
 
 import unittest
 
 plain_elements = ["some", "small", "list", "of", "distinct", "elements"]
 elements = [H(el) for el in plain_elements]
+
 
 class Merkle2TestSuite(unittest.TestCase):
     """Merkle tree implementation test cases."""
@@ -167,7 +168,7 @@ class Merkle2TestSuite(unittest.TestCase):
         H45 = H(elements[4] + elements[5])
 
         p = merkle_tree.prove_leaf(3)  # H('of')
-        self.assertEqual(p[0], elements[2]) # sibling of leaf 3
+        self.assertEqual(p[0], elements[2])  # sibling of leaf 3
         self.assertEqual(p[1], H01)
         self.assertEqual(p[2], H45)
 

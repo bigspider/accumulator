@@ -1,7 +1,7 @@
-from typing import Union, List, Callable
+from typing import List, Callable
 from .event import Event
 from .merkle import MerkleTree, get_proof_size, merkle_proof_verify
-from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred, ceil_lg, iroot
+from .common import H, NIL, is_power_of_2, zeros
 from .factory import AbstractAccumulatorFactory, AbstractAccumulatorManager, AbstractProver, AbstractVerifier
 
 # This module implements the generalized, parameterized variant of the simple accumulator.
@@ -11,6 +11,7 @@ from .factory import AbstractAccumulatorFactory, AbstractAccumulatorManager, Abs
 # The vector of representative elements is sorted by decreasing index, and it must start with R_{k - 1}.
 # When generating or verifying a proof for a target element x_j, the leaf of the Merkle tree that is included in the
 # proof (or revealed) is the one corresponding to the element with the smallest index which is at least j.
+
 
 class GeneralizedAccumulator(AbstractAccumulatorManager):
     def __init__(self, get_representatives_fn: Callable[[int], List[int]]):
@@ -94,7 +95,7 @@ class GeneralizedProver(AbstractProver):
 
         if i > j:
             next_i = min(rep for rep in representatives if rep >= j)
-            leaf_index = next(l for l, val in enumerate(representatives) if val == next_i)
+            leaf_index = next(leaf_idx for leaf_idx, val in enumerate(representatives) if val == next_i)
             w.append(mt.get(leaf_index))
             w += mt.prove_leaf(leaf_index)
 
@@ -130,7 +131,7 @@ class GeneralizedVerifier(AbstractVerifier):
         if i == j:
             return x_i == x
         else:  # i > j
-            # find the index of the smallest representative that is >= j 
+            # find the index of the smallest representative that is >= j
             representatives = self.get_representatives(i)
             next_repr_index = 0
             while next_repr_index < len(representatives) - 1 and representatives[next_repr_index+1] >= j:

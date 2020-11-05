@@ -1,6 +1,5 @@
-from typing import Tuple, List
-import unittest
-from accumulator import H, NIL
+from typing import Tuple
+from accumulator.common import H, NIL
 from accumulator.factory import AbstractAccumulatorManager, AbstractProver, AbstractVerifier
 
 
@@ -8,6 +7,7 @@ from accumulator.factory import AbstractAccumulatorManager, AbstractProver, Abst
 
 plain_elements = ["some", "small", "list", "of", "distinct", "elements"]
 elements = [H(el) for el in plain_elements]
+
 
 class BaseAccumulatorTestSuite:
     """Contains the tests that are common for all the accumulators"""

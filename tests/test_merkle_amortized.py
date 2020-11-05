@@ -1,4 +1,4 @@
-from accumulator import H, NIL
+from accumulator.common import H, NIL
 from accumulator.merkle_amortized import MerkleTree, merkle_proof_verify
 
 import unittest
@@ -17,7 +17,6 @@ class MerkleTestSuite(unittest.TestCase):
         self.assertEqual(len(mt1.nodes), len(mt2.nodes))
         for j in range(len(mt1.nodes)):
             self.assertEqual(mt1.nodes[j], mt2.nodes[j])
-
 
     def test_add_1(self):
         merkle_tree = MerkleTree()
@@ -62,7 +61,6 @@ class MerkleTestSuite(unittest.TestCase):
             mt1.add(elements[i])
             mt2.set(mt2.k, elements[i])
             self.assertMerkleTreesEqual(mt1, mt2)
-
 
     def test_capacity(self):
         merkle_tree = MerkleTree()
@@ -126,7 +124,7 @@ class MerkleTestSuite(unittest.TestCase):
         H4567 = H(H45 + H67)
 
         p = merkle_tree.prove_leaf(3)  # H('of')
-        self.assertEqual(p[0], elements[2]) # sibling of leaf 3
+        self.assertEqual(p[0], elements[2])  # sibling of leaf 3
         self.assertEqual(p[1], H01)
         self.assertEqual(p[2], H4567)
 

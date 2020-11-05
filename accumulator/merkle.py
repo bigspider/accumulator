@@ -1,5 +1,6 @@
-from .common import H, NIL, is_power_of_2, ceil_lg, floor_lg, largest_power_of_2_less_than
-from typing import List, Optional
+from .common import H, NIL, is_power_of_2, ceil_lg, largest_power_of_2_less_than
+from typing import List
+
 
 # root is the only node with parent == None
 # leaves have left == right == None
@@ -97,7 +98,7 @@ class MerkleTree:
         if self.depth == 0:
             ltree_size = 0
         else:
-            ltree_size = 1 << (self.depth - 1) # number of leaves of the left subtree of cur_root
+            ltree_size = 1 << (self.depth - 1)  # number of leaves of the left subtree of cur_root
 
         cur_root = self.root_node
         cur_root_size = len(self.leaves) - 1
@@ -107,7 +108,7 @@ class MerkleTree:
             cur_root_size -= ltree_size
             ltree_size /= 2
 
-        new_node = Node(cur_root, new_leaf, cur_root.parent, None) # node value will be computed later
+        new_node = Node(cur_root, new_leaf, cur_root.parent, None)  # node value will be computed later
         if cur_root.parent is None:
             # replacing the root
             self.depth += 1
@@ -174,7 +175,10 @@ def get_directions(size: int, index: int) -> List[bool]:
 
     while size > 1:
         depth = ceil_lg(size)
-        mask = 1 << (depth - 1) # bitmask of the direction from the current node; also the number of leaves of the left subtree
+
+        # bitmask of the direction from the current node; also the number of leaves of the left subtree
+        mask = 1 << (depth - 1)
+
         right_child = index & mask != 0
         directions.append(right_child)
 
@@ -202,10 +206,9 @@ def merkle_proof_verify(root: bytes, size: int, element: bytes, index: int, proo
         return False  # wrong proof size
 
     for h in proof:
-        if directions.pop() == False:
+        if directions.pop() is False:
             cur_hash = H(cur_hash + h)
         else:
             cur_hash = H(h + cur_hash)
 
     return cur_hash == root
-

@@ -1,10 +1,16 @@
-from .common import is_power_of_2, zeros, pred
-from .generalized_accumulator import GeneralizedAccumulatorFactory, GeneralizedAccumulator, GeneralizedProver, GeneralizedVerifier
+from .common import is_power_of_2, pred
+from .generalized_accumulator import (
+    GeneralizedAccumulatorFactory,
+    GeneralizedAccumulator,
+    GeneralizedProver,
+    GeneralizedVerifier,
+)
 
 # Implementation of the generalized accumulator with about log log n "evenly spaced" back-pointers.
 
-# Cost of update: O(log log n)
+# Cost of update: ~2 log log n
 # Proof size: O(log n (log log n)^2)
+
 
 def get_representatives(k: int):
     if k == 1:

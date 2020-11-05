@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import List
 from .event import Event
 from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred
 from .factory import AbstractAccumulatorFactory, AbstractAccumulatorManager, AbstractProver, AbstractVerifier
@@ -9,6 +9,7 @@ from .factory import AbstractAccumulatorFactory, AbstractAccumulatorManager, Abs
 
 # Cost of update: O(1)
 # Proof size: O((log n)^2)
+
 
 class SimpleAccumulator(AbstractAccumulatorManager):
     def __init__(self):

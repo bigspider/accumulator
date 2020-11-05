@@ -3,9 +3,11 @@ from typing import Union
 
 NIL = bytes([0] * 32)
 
+
 def highest_divisor_power_of_2(n: int) -> int:
     """Return the maximum power of two that divides n. Return 0 for n == 0."""
     return n & (~(n - 1))
+
 
 def floor_lg(n: int) -> int:
     """Return floor(log_2(n))."""
@@ -15,6 +17,7 @@ def floor_lg(n: int) -> int:
         t = 2 * t
         r = r + 1
     return r
+
 
 def ceil_lg(n: int) -> int:
     """Return ceiling(log_2(n))."""
@@ -50,11 +53,13 @@ def zeros(n: int) -> int:
         result += 1
     return result
 
+
 def pred(n: int) -> int:
     """Return the number obtained by zeroing the least significant 1 digit in the binary
     represenation of n. Return 0 if n == 0."""
 
     return n - highest_divisor_power_of_2(n)
+
 
 def rpred(n: int, m: int) -> int:
     """For integers n > m > 0, return the largest number not smaller than m that can be obtained by
@@ -68,11 +73,11 @@ def hook_index(n: int, t: int) -> int:
     """For integers n and t, finds the largest number not greater than n such that the binary
     representation of n has exactly t zeros."""
     d = 1 << t
-    r = n & ~(d - 1) # zero the last t bits of n
+    r = n & ~(d - 1)  # zero the last t bits of n
     if n & d != 0:
         return r
     else:
-        return (r - 1) & ~(d - 1) # zero the last t bits of r - 1
+        return (r - 1) & ~(d - 1)  # zero the last t bits of r - 1
 
 
 # from https://stackoverflow.com/questions/15978781/how-to-find-integer-nth-roots

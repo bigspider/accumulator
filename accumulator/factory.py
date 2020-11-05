@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple
 
+
 class AbstractAccumulatorManager(ABC):
     """
     An accumulator manager maintains the public state of the accumulator.
@@ -13,6 +14,7 @@ class AbstractAccumulatorManager(ABC):
     @abstractmethod
     def add(self, element: bytes):
         pass
+
 
 class AbstractProver(ABC):
     @abstractmethod
@@ -36,6 +38,7 @@ class AbstractProver(ABC):
         """
         pass
 
+
 class AbstractVerifier(ABC):
     @abstractmethod
     def verify(self, Ri: bytes, i: int, j: int, w: List[bytes], x: bytes) -> bool:
@@ -48,6 +51,9 @@ class AbstractVerifier(ABC):
 
 class AbstractAccumulatorFactory(ABC):
     @abstractmethod
-    def create_accumulator(self, initial_elements: List[bytes] = []) -> Tuple[AbstractAccumulatorManager, AbstractProver, AbstractVerifier]:
+    def create_accumulator(
+        self,
+        initial_elements: List[bytes] = []
+    ) -> Tuple[AbstractAccumulatorManager, AbstractProver, AbstractVerifier]:
         """Creates an accumulator manager, and the corresponding prover and verifier."""
         pass

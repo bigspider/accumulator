@@ -1,7 +1,7 @@
 from typing import List
 from .event import Event
 from .factory import AbstractAccumulatorFactory, AbstractAccumulatorManager, AbstractProver, AbstractVerifier
-from .common import H, NIL, highest_divisor_power_of_2 as d, is_power_of_2, zeros, pred, rpred, hook_index, floor_lg, ceil_lg
+from .common import H, NIL, zeros, pred, rpred, hook_index, floor_lg
 from .merkle import MerkleTree, merkle_proof_verify, get_proof_size
 
 # This module implements the second construction of the accumulator.
@@ -11,6 +11,7 @@ from .merkle import MerkleTree, merkle_proof_verify, get_proof_size
 
 # Cost of update: O(log log n)
 # Proof size: O(log n log log n)
+
 
 class SmartAccumulator(AbstractAccumulatorManager):
     def __init__(self):
@@ -71,31 +72,31 @@ class SmartProver(AbstractProver):
         self.elements[k] = x
         self.R[k] = r
 
-
     @classmethod
     def make_tree_indexes(cls, n: int):
         """Constructs indexes of all the R_i that are contained in the state for n."""
         i = 0
-        t = 1 # 2**i
-        I = []
+        t = 1  # 2**i
+        result = []
         while t <= n:
             # find the largest number less than or equal than n that ends with exactly i zeros
             idx = hook_index(n, i)
-            I.append(idx)
+            result.append(idx)
 
             i = i + 1
             t = t * 2
-        return I
+        return result
 
     def make_tree(self, n: int):
         """Constructs the Merkle tree M_n"""
-        I = self.make_tree_indexes(n)
         S = []
-        for idx in I:
+        for idx in self.make_tree_indexes(n):
             if idx > self.initial_k:
-                S.append(self.R[idx]) # we have seen the value since the creation of this Prover
+                # we have seen the value since the creation of this Prover
+                S.append(self.R[idx])
             else:
-                S.append(self.initial_S[zeros(idx)]) # unchanged since the creation of this Prover; copy value from the initial_S 
+                # unchanged since the creation of this Prover; copy value from the initial_S
+                S.append(self.initial_S[zeros(idx)])
 
         return MerkleTree(S)
 
@@ -162,8 +163,9 @@ class SmartVerifier(AbstractVerifier):
             if not merkle_proof_verify(M_prev_root, merkle_tree_size, leaf, leaf_index, merkle_proof):
                 print("Merkle proof failed")
                 return False
-            
+
             return self.verify(leaf, i_next, j, w_rest, x)
+
 
 class SmartAccumulatorFactory(AbstractAccumulatorFactory):
     def create_accumulator(self):

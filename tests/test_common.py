@@ -9,6 +9,7 @@ from accumulator.common import (
 
 import unittest
 
+
 class CommonTestSuite(unittest.TestCase):
     """Tests for functions in common."""
 

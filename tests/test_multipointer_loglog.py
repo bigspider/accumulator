@@ -1,8 +1,8 @@
 import unittest
 from accumulator.multipointer_loglog import get_representatives, MultipointerLogLogFactory
-from accumulator.common import pred
 
 from .base import BaseAccumulatorTestSuite
+
 
 class GeneralizedAccumulatorTestSuite(BaseAccumulatorTestSuite, unittest.TestCase):
     """Generalized accumulator test cases."""
@@ -34,7 +34,6 @@ class GeneralizedAccumulatorTestSuite(BaseAccumulatorTestSuite, unittest.TestCas
         # self.assertEqual(get_representatives(39), [38, 36])
         # self.assertEqual(get_representatives(40), [39, 32])
         # self.assertEqual(get_representatives(42), [41, 40, 32])
-
 
     def get_instances(self):
         factory = MultipointerLogLogFactory()

@@ -5,17 +5,21 @@ from typing import List
 
 # Helper functions for representing a binary tree in a zero-indexed array
 
+
 def parent(n: int) -> int:
     """Return the index of the parent of the node with a positive index n."""
     return (n - 1) // 2
+
 
 def left_child(n: int) -> int:
     """Return the left child of a node with non-negative index n."""
     return 2 * n + 1
 
+
 def right_child(n: int) -> int:
     """Return the right child of a node with non-negative index n."""
     return 2 * n + 2
+
 
 class MerkleTree:
     """
@@ -37,7 +41,7 @@ class MerkleTree:
         self.nodes = [NIL] * (2 * self.capacity - 1)
         for i in range(len(elements)):
             self.nodes[self.first_leaf + i] = elements[i]
-        self.recompute_internal_nodes() 
+        self.recompute_internal_nodes()
 
     def __len__(self) -> int:
         """Return the total number of leaves in the tree."""
