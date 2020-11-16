@@ -102,6 +102,27 @@ def iroot(k, n):
         return lo
 
 
+def iroot_ceil(k, n):
+    """Computes ceil(n^(1/k)), that is, the k-th root of n, rounded up to the nearest integer."""
+    hi = 1
+    while pow(hi, k) < n:
+        hi *= 2
+    lo = hi // 2
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        midToK = pow(mid, k)
+        if midToK < n:
+            lo = mid
+        elif n < midToK:
+            hi = mid
+        else:
+            return mid
+    if pow(lo, k) == n:
+        return lo
+    else:
+        return hi
+
+
 def H(x: Union[str, bytes]) -> bytes:
     """If x an array of bytes, return the sha256 digest of it.
     If x if a string, convert it to bytes using utf8 encoding first, then return the digest."""

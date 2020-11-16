@@ -37,7 +37,6 @@ class GeneralizedAccumulatorTestSuite(BaseAccumulatorTestSuite, unittest.TestCas
                 0b111001100100101000000000000000000000000000,
             ])
 
-
     def get_instances(self):
         factory = MultipointerLogLogFactory()
         return factory.create_accumulator()

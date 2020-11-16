@@ -19,12 +19,12 @@ def get_representatives(k: int):
     # if k is even, we also add k - 1
     result = [k - 1] if k % 2 == 0 else []
 
-    t = k
-    c = 1
-    while pred(t) > 0:
-        t = pred(t)
+    t = pred(k)
+    c = 1  # count of how many bits are zeroed
+    while t > 0:
         if is_power_of_2(c):
             result.append(t)
+        t = pred(t)
         c += 1
     return result
 

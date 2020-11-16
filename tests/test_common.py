@@ -5,6 +5,7 @@ from accumulator.common import (
     largest_power_of_2_less_than,
     highest_divisor_power_of_2,
     iroot,
+    iroot_ceil,
 )
 
 import unittest
@@ -114,6 +115,23 @@ class CommonTestSuite(unittest.TestCase):
         self.assertEqual(iroot(3, 63), 3)
         self.assertEqual(iroot(3, 64), 4)
         self.assertEqual(iroot(3, 65), 4)
+
+    def test_iroot_ceil(self):
+        for i in range(0, 10):
+            self.assertEqual(iroot_ceil(1, i), i)
+
+        self.assertEqual(iroot_ceil(2, 0), 0)
+        self.assertEqual(iroot_ceil(2, 1), 1)
+        self.assertEqual(iroot_ceil(2, 2), 2)
+        self.assertEqual(iroot_ceil(2, 3), 2)
+        self.assertEqual(iroot_ceil(2, 4), 2)
+        self.assertEqual(iroot_ceil(2, 5), 3)
+        self.assertEqual(iroot_ceil(2, 8), 3)
+        self.assertEqual(iroot_ceil(2, 9), 3)
+        self.assertEqual(iroot_ceil(2, 10), 4)
+        self.assertEqual(iroot_ceil(3, 63), 4)
+        self.assertEqual(iroot_ceil(3, 64), 4)
+        self.assertEqual(iroot_ceil(3, 65), 5)
 
 
 if __name__ == '__main__':

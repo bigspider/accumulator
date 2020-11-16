@@ -1,4 +1,4 @@
-from .common import pred
+from .common import pred, iroot_ceil, floor_lg
 from .generalized_accumulator import (
     GeneralizedAccumulatorFactory,
     GeneralizedAccumulator,
@@ -19,12 +19,25 @@ def get_representatives(k: int, p: int):
     # if k is even, we also add k - 1
     result = [k - 1] if k % 2 == 0 else []
 
-    t = k
-    for i in range(p):
+    l = floor_lg(k)  # k has l + 1 bits
+    d = iroot_ceil(p, l)  # d = ceil(floor(log n)^(1/p))
+
+    # computes all the powers of d that are not bigger than l
+    exponents = set([1])
+    if d > 1:
+        t = d
+        while t <= l and d > 1:
+            exponents.add(t)
+            t *= d
+
+    t = pred(k)
+    c = 1  # count of how many bits are zeroed
+    while t > 0:
+        if c in exponents:
+            result.append(t)
         t = pred(t)
-        if t == 0:
-            break
-        result.append(t)
+        c += 1
+
     return result
 
 
